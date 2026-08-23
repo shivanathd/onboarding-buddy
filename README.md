@@ -53,8 +53,9 @@ Keep the virtual environment outside the repository. Nothing breaks if you put
 it inside, but the checks in this project scan every file in the tree and a
 virtual environment drags several thousand unrelated files into that scan.
 
-Open `.env` and fill in the two Slack tokens, your Anthropic key, the channel
-id, and your own user id as `MANAGER_ID`. You can leave the List settings empty,
+Open `.env` and fill in the two Slack tokens, an Anthropic key from
+console.anthropic.com, the channel id, and your own user id as `MANAGER_ID`. The
+key is optional: without it the worker runs on templates and still works. You can leave the List settings empty,
 because the next step prints them.
 
 ### 4. Create and seed the List, 3 minutes
@@ -83,10 +84,28 @@ Same folder, same code, no changes. Your laptop and a hosted service are the
 same worker on two shifts. The laptop is where you learn. When the worker earns
 a real shift, host it, because a sleeping laptop is a sleeping worker.
 
-Set the same variables from `.env` in the Railway dashboard rather than in a
-file. `railway.json` sets the builder and the start command and deliberately
+Click the button, connect your GitHub account, and Railway will build from this
+repository. Then set the variables in the Railway dashboard, not in a file.
+
+Required, or the worker refuses to start and tells you which one is missing:
+
+    SLACK_BOT_TOKEN  SLACK_APP_TOKEN  CHANNEL_ID  MANAGER_ID
+    LIST_ID  COL_STEP  COL_HIRE  COL_OWNER  COL_DUE  COL_STATUS  COL_THREAD
+
+Worth setting as well:
+
+    ANTHROPIC_API_KEY   without it the worker runs on templates
+    ANTHROPIC_MODEL     which model answers
+    TZ                  or your 9am cron fires in UTC
+    CANVAS_FILE_ID      the canvas holding the job description
+    DEMO_MODE           true compresses the clock, useful for a demo
+
+Run `bootstrap.py` locally first. It prints the List settings, and the hosted
+worker needs the same values.
+
+`railway.json` sets only the builder and the start command, and deliberately
 carries no variables, because configuration defined in code overrides the
-dashboard and you do not want your tokens in git.
+dashboard and you do not want tokens in git.
 
 Socket Mode means there is no public URL, no request signing, and no ingress to
 configure. The worker dials out.
@@ -165,6 +184,62 @@ exactly three things:
 The real cron lines stay visible in `app.py`, directly above the demo override.
 The escalation threshold is not compressed, so you still see the difference
 between a nudge and an escalation.
+
+## The brain is Claude, and here is where you change it
+
+The model is one function in `agent.py`, which is the smallest file in this
+repository on purpose. The room expects the AI to be the big part. It is not.
+
+### What is running
+
+    ANTHROPIC_MODEL=claude-sonnet-5
+
+Get a key from console.anthropic.com and put it in `.env` as
+`ANTHROPIC_API_KEY`. It starts `sk-ant-`.
+
+### Running with no key at all
+
+The worker still starts. Every sentence the model would have written has a
+template behind it, so with no key you get:
+
+    an answer that says it could not compose one, followed by the raw List state
+    an escalation written from a template, with working buttons
+    chase and report completely unchanged, because they never call a model
+
+Nothing silently stops working. A brain failure never blocks a state write, and
+that is deliberate: the loop matters, judgement is a bonus.
+
+### Changing the model
+
+One line in `.env`, no code change, no deploy if you are running locally:
+
+    ANTHROPIC_MODEL=claude-haiku-4-5-20251001
+
+One thing to know before you drop to a smaller ceiling: the model writes a
+thinking block before it writes an answer, and both come out of the same token
+allowance. Set `max_tokens` too low in `agent.py` and you get a call that
+succeeds and returns no words at all. Ask for brevity in the prompt instead. The
+current ceiling is deliberately generous for that reason.
+
+### Changing the provider
+
+This is an honest code change, not a setting, and `agent.py` is forty two lines
+so that the change is small. Replace the body of `ask()` with your provider's
+call, keep the signature, keep the try and except, and keep returning the
+fallback on any failure. Nothing else in the repository imports a model library.
+
+    def ask(brief, context, question, fallback=None):
+        ...your provider here...
+        return text or fallback
+
+That is the whole surface. The rest of the worker does not know or care which
+model answered.
+
+### What it costs
+
+Chase and Report never call the model, so a shift costs nothing. Answer costs one
+call. An escalation costs one call. On a real cohort that is a handful of calls a
+day, and the shape of the bill is easier to explain than the number.
 
 ## Settings
 
