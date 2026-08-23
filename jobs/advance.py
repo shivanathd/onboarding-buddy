@@ -54,5 +54,4 @@ def run(client, event, bot_user_id):
     said = agent.ask("Confirm a finished onboarding step in one short sentence.",
                      "step=%s hire=%s" % (step, hire), fallback) or fallback
     client.chat_postMessage(channel=policy.CHANNEL_ID, thread_ts=item.get("ts"), text=said)
-    print("ADVANCE %s is done, row %s ticked and confirmed in thread"
-          % (step, match["id"]), flush=True)
+    print("ADVANCE %s is done, row ticked and confirmed in thread" % step, flush=True)
