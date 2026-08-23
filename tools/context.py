@@ -12,6 +12,7 @@ Grounding comes first on purpose. The brain is never asked anything until the
 List read has succeeded.
 """
 
+import datetime
 import html.parser
 import pathlib
 import re
@@ -159,17 +160,28 @@ def mentionise(text):
 
 
 def summarise_rows(items):
-    """The List as plain lines a person could read off a projector."""
-    out = []
+    """The List as flat lines for the model to read.
+
+    Today leads, and every row says how late it is. That arithmetic belongs in
+    Python. The model is here for judgement, not for counting days.
+    """
+    today = datetime.date.today()
+    out = ["today=%s" % today.isoformat()]
     for item in items:
         step = lists.text_of(item, policy.COLUMNS["step"])
         hire = lists.first_user(item, policy.COLUMNS["hire"])
         owner = lists.first_user(item, policy.COLUMNS["owner"])
         due = lists.date_of(item, policy.COLUMNS["due"])
-        status = lists.text_of(item, policy.COLUMNS["status"]) or "Open"
-        out.append("step=%s hire=%s owner=%s due=%s status=%s"
-                   % (step, mention(hire), mention(owner),
-                      due.isoformat() if due else "none", status))
+        status = (lists.select_label(item, policy.COLUMNS["status"], policy.STATUS_LABELS)
+                  or policy.STATUS_OPEN)
+        if due is None:
+            when = "due=none"
+        elif due < today:
+            when = "due=%s overdue_by=%d_days" % (due.isoformat(), (today - due).days)
+        else:
+            when = "due=%s in=%d_days" % (due.isoformat(), (due - today).days)
+        out.append("step=%s hire=%s owner=%s %s status=%s"
+                   % (step, mention(hire), mention(owner), when, status))
     return out
 
 
