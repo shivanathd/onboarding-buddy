@@ -21,8 +21,12 @@ from tools import lists
 
 
 def rows(client):
-    """Every List row. State before opinion."""
-    return lists.list_items(client, policy.LIST_ID)
+    """Every List row. State before opinion.
+
+    Jobs are handed the plain Slack client, so the Lists adapter is built here
+    rather than threaded through every caller.
+    """
+    return lists.list_items(lists.lists_client(client), policy.LIST_ID)
 
 
 # ------------------------------------------------------------------- the brief
