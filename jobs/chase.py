@@ -42,10 +42,10 @@ def run(client):
         if over <= policy.GRACE_SECONDS:
             continue
         past, days = past + 1, int(over // 86400)
+        if lists.text_of(item, policy.COLUMNS["thread"]):
+            continue  # already has a thread, nudge or escalation. One per row.
         if over > policy.ESCALATION_SECONDS:
             approval.open_for(client, adapter, item, days)
-        elif lists.text_of(item, policy.COLUMNS["thread"]):
-            continue
         elif opened >= policy.MAX_NEW_THREADS_PER_SHIFT:
             held += 1
         else:

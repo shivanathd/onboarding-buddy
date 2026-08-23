@@ -22,7 +22,7 @@ def ask(brief, context, question, fallback=None):
         client = client or Anthropic(timeout=20.0, max_retries=1)
         reply = client.messages.create(
             model=os.environ.get("ANTHROPIC_MODEL", ""),
-            max_tokens=400,
+            max_tokens=220,
             system=brief,
             messages=[{"role": "user", "content": "%s\n\nQuestion: %s" % (context, question)}],
         )

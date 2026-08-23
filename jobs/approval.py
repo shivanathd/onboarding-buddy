@@ -23,12 +23,14 @@ def _button(action_id, label, row_id, style=None):
 def open_for(client, adapter, item, days_over):
     """Ask a human. The worker proposes, a human disposes, and the thread is the
     paper trail. One open approval per row, per APR-5."""
-    if lists.select_value(item, policy.COLUMNS["status"]) == policy.STATUS_ESCALATED.lower():
-        return
+    if (lists.select_value(item, policy.COLUMNS["status"]) == policy.STATUS_ESCALATED.lower()
+            or lists.text_of(item, policy.COLUMNS["thread"])):
+        return  # already escalated, or a thread is already open on this row
     step = lists.text_of(item, policy.COLUMNS["step"])
     thread = lists.text_of(item, policy.COLUMNS["thread"])
     said = "\n".join(context.thread_replies(client, policy.CHANNEL_ID, thread)) if thread else ""
-    draft = agent.ask("Write one short paragraph on what is blocking this step.",
+    draft = agent.ask("Say what is blocking this step. Two sentences at most, plain "
+                      "words, no preamble and no hedging.",
                       "step=%s days past grace=%d\nthread:\n%s" % (step, days_over, said),
                       "What is blocking it?",
                       fallback="Escalation: %s is %d days past grace and I could not read a "
