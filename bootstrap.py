@@ -1,6 +1,6 @@
 """Create the List, seed it, and print the mapping. Run this once.
 
-Column ids like Col0BS1300PSS are opaque and there is no way to guess them. So
+Column ids like Col0000000000 are opaque and there is no way to guess them. So
 this prints a paste ready block instead of hiding the mapping in a file you
 never read. It deliberately does NOT write .env for you: the mapping is the
 thing this session is trying to teach.
@@ -8,6 +8,17 @@ thing this session is trying to teach.
   python bootstrap.py
 
 Then paste the printed lines over the matching lines in .env.
+
+Who gets assigned to what:
+
+  SEED_OWNERS   whoever should be chased about a step. Defaults to MANAGER_ID.
+  SEED_HIRES    whoever the steps are for. Defaults to MANAGER_ID.
+
+Both take a comma separated list of Slack user ids and both are optional. On a
+one person workspace, leaving them empty is the right answer and everything
+lands on you. If you have colleagues, keep SEED_OWNERS as yourself while you
+are testing: the worker tags owners, and it will tag them every minute in
+DEMO_MODE.
 """
 
 import csv
@@ -45,20 +56,28 @@ ENV_KEY = {"step": "COL_STEP", "hire": "COL_HIRE", "owner": "COL_OWNER",
            "due": "COL_DUE", "status": "COL_STATUS", "thread": "COL_THREAD"}
 
 
-def seed_users():
-    """Real user ids stay out of the seed file. The csv carries symbols like
-    owner_1, and they map onto whoever SEED_USERS names, falling back to the
-    manager. That keeps the shipped seed generic with no names in it."""
-    raw = [u.strip() for u in os.environ.get("SEED_USERS", "").split(",") if u.strip()]
-    return raw or [policy.MANAGER_ID]
+def pool(name):
+    """User ids from one comma separated setting, or nothing."""
+    return [u.strip() for u in os.environ.get(name, "").split(",") if u.strip()]
 
 
-def resolve(symbol, pool, cache):
-    """Give each distinct symbol a stable user from the pool."""
+def people():
+    """Who fills the New hire and Owner columns.
+
+    SEED_USERS is the older single setting and still works, feeding both.
+    """
+    both = pool("SEED_USERS")
+    hires = pool("SEED_HIRES") or both or [policy.MANAGER_ID]
+    owners = pool("SEED_OWNERS") or both or [policy.MANAGER_ID]
+    return hires, owners
+
+
+def resolve(symbol, options, cache):
+    """Give each distinct symbol in the csv a stable person from a pool."""
     if not symbol:
         return ""
     if symbol not in cache:
-        cache[symbol] = pool[len(cache) % len(pool)]
+        cache[symbol] = options[len(cache) % len(options)]
     return cache[symbol]
 
 
@@ -69,31 +88,63 @@ def due_date(offset):
     return datetime.date.today() + datetime.timedelta(days=int(offset))
 
 
-def main():
+def explain(problem):
+    """Say what a failure probably means, in words."""
+    code = problem.response.get("error")
+    if code == "enterprise_is_restricted":
+        print("This workspace is an Enterprise org, where the Lists API cannot "
+              "create a List at all. Build it by hand using the schema in the "
+              "README, then read the column ids back and fill .env yourself.")
+    elif code in ("method_not_supported_for_channel_type", "not_allowed_token_type",
+                  "missing_scope", "invalid_auth", "account_inactive"):
+        print("Slack refused the call with %s." % code)
+        print("If this is a free or trial workspace, Lists may not be available "
+              "on your plan. Check whether you can create a List by hand in "
+              "Slack. If you cannot, the Lists half of this worker will not run "
+              "here, and no amount of scopes will change that.")
+    else:
+        print("Could not create the List: %s" % code)
+        print("If this is a trial workspace, the most likely cause is that "
+              "Lists are not on your plan. Try creating one by hand in Slack "
+              "first: if that is not offered, this is a plan limit.")
+    for message in (problem.response.get("response_metadata") or {}).get("messages", []):
+        print("  %s" % message)
+
+
+def preflight():
+    """Catch a bad setup before anything is created."""
     if policy.LIST_ID:
         print("LIST_ID is already set, so there is nothing to create. Clear it "
               "in .env first if you really want a second List.")
-        return 1
+        return None
     if not policy.SLACK_BOT_TOKEN:
         print("SLACK_BOT_TOKEN is not set. Fill it in .env and run this again.")
-        return 1
-
+        return None
+    if not policy.MANAGER_ID:
+        print("MANAGER_ID is not set. It is who unowned steps get routed to, so "
+              "the seed needs it even if you are the only person here. Your own "
+              "user id is fine.")
+        return None
     web = WebClient(token=policy.SLACK_BOT_TOKEN)
+    try:
+        who = web.auth_test()
+    except SlackApiError as problem:
+        print("That bot token did not work: %s" % problem.response.get("error"))
+        return None
+    print("Connected to %s as %s." % (who.get("team"), who.get("user")))
+    return web
+
+
+def main():
+    web = preflight()
+    if web is None:
+        return 1
     client = lists.lists_client(web)
 
     try:
         created = lists.create_list(client, "Onboarding cohort", SCHEMA)
     except SlackApiError as problem:
-        code = problem.response.get("error")
-        if code == "enterprise_is_restricted":
-            print("This workspace is an Enterprise org, where the Lists API "
-                  "cannot create a List. Build the List by hand in Slack using "
-                  "the schema in the README, then read the column ids back with "
-                  "slackLists.items.list and fill .env yourself.")
-            return 1
-        print("Could not create the List: %s" % code)
-        for message in (problem.response.get("response_metadata") or {}).get("messages", []):
-            print("  %s" % message)
+        explain(problem)
         return 1
 
     list_id = created["list_id"]
@@ -105,7 +156,7 @@ def main():
             options[choice["label"].lower()] = choice["value"]
     print("Created the List %s with %d columns." % (list_id, len(columns)))
 
-    pool = seed_users()
+    hire_pool, owner_pool = people()
     hires, owners = {}, {}
     rows = list(csv.DictReader(SEED.open()))
     made = 0
@@ -113,11 +164,11 @@ def main():
         fields = [{"column_id": columns["step"], "rich_text": lists.text_cell(row["step"])},
                   {"column_id": columns["status"], "select": lists.select_cell(options["open"])}]
 
-        hire = resolve(row["hire"], pool, hires)
+        hire = resolve(row["hire"], hire_pool, hires)
         if hire:
             fields.append({"column_id": columns["hire"], "user": lists.user_cell(hire)})
 
-        owner = resolve(row["owner"], pool, owners)
+        owner = resolve(row["owner"], owner_pool, owners)
         if owner:
             fields.append({"column_id": columns["owner"], "user": lists.user_cell(owner)})
         else:
@@ -146,7 +197,14 @@ def main():
                 return 1
         time.sleep(0.2)
 
-    print("Seeded %d of %d rows. Owners used: %d." % (made, len(rows), len(set(owners.values()))))
+    print("Seeded %d of %d rows." % (made, len(rows)))
+    distinct_hires = len(set(hires.values()))
+    distinct_owners = len(set(v for v in owners.values() if v))
+    print("New hire column uses %d person%s, Owner column uses %d."
+          % (distinct_hires, "" if distinct_hires == 1 else "s", distinct_owners))
+    if distinct_hires == 1 and distinct_owners == 1:
+        print("That is normal on a one person workspace. Set SEED_HIRES to a "
+              "couple of user ids if you want the cohort to look like a cohort.")
     print("")
     print("Paste these seven lines over the matching lines in .env:")
     print("")
