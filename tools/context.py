@@ -14,6 +14,7 @@ List read has succeeded.
 
 import html.parser
 import pathlib
+import re
 import urllib.request
 
 import policy
@@ -133,6 +134,30 @@ def search(client, query):
 
 # ----------------------------------------------------------------- assembly
 
+def mention(user_id):
+    """Mention markup, which Slack renders as a name. An empty cell stays a word.
+
+    Resolving a name properly would need users:read. This app does not have that
+    scope and does not need it: the client renders the name for us.
+    """
+    return "<@%s>" % user_id if user_id else "unassigned"
+
+
+def mentionise(text):
+    """Wrap any bare user id the model left unwrapped.
+
+    The state hands the model mention markup, but a model will sometimes strip
+    the brackets and write the raw id. This puts them back so nobody on a
+    projector reads a string of capitals and digits.
+    """
+    def wrap(found):
+        body = found.group(1)
+        # A real id always contains a digit. Plain uppercase words do not.
+        return "<@%s>" % body if any(c.isdigit() for c in body) else body
+
+    return re.sub(r"(?<![<@\w])(U[A-Z0-9]{7,11})(?![>\w])", wrap, text)
+
+
 def summarise_rows(items):
     """The List as plain lines a person could read off a projector."""
     out = []
@@ -143,7 +168,7 @@ def summarise_rows(items):
         due = lists.date_of(item, policy.COLUMNS["due"])
         status = lists.text_of(item, policy.COLUMNS["status"]) or "Open"
         out.append("step=%s hire=%s owner=%s due=%s status=%s"
-                   % (step, hire or "unassigned", owner or "unassigned",
+                   % (step, mention(hire), mention(owner),
                       due.isoformat() if due else "none", status))
     return out
 

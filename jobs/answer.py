@@ -52,6 +52,7 @@ def run(client, event):
                       "State:\n%s\n\nRecent conversation:\n%s"
                       % (known["state"], known["conversation"]),
                       question, fallback=fallback)
+    reply = context.mentionise(reply)
     body = [blocks.section(reply),
             blocks.context("Grounded in %d steps from the List" % len(known["items"]))]
     if native:

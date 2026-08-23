@@ -29,6 +29,7 @@ def open_for(client, adapter, item, days_over):
                       "What is blocking it?",
                       fallback="Escalation: %s is %d days past grace and I could not read a "
                                "reason from the thread." % (step, days_over))
+    draft = context.mentionise(draft)
     posted = client.chat_postMessage(
         channel=policy.CHANNEL_ID, text="Escalation for %s" % step,
         blocks=[blocks.header("Decision needed"),
