@@ -12,7 +12,7 @@ import time
 
 import policy
 from jobs import approval
-from tools import lists
+from tools import blocks, lists
 
 def _seconds_past(due):
     """Detection is a subtraction. No judgement, no model, no surprises."""
@@ -52,9 +52,12 @@ def run(client):
             opened += 1
             step = lists.text_of(item, policy.COLUMNS["step"])
             owner = lists.first_user(item, policy.COLUMNS["owner"]) or policy.MANAGER_ID
-            posted = client.chat_postMessage(channel=policy.CHANNEL_ID,
-                                             text="Day %d: %s is still open. <@%s>, is this moving?"
-                                                  % (days, step, owner))
+            line = "Day %d: *%s* is still open. <@%s>, is this moving?" % (days, step, owner)
+            posted = client.chat_postMessage(
+                channel=policy.CHANNEL_ID, text=line,
+                blocks=[blocks.section(line),
+                        blocks.context("Due %s, %d days past grace. Tick this message when it "
+                                       "is done." % (due.isoformat(), days))])
             lists.update_cells(adapter, policy.LIST_ID, item["id"],
                                [{"column_id": policy.COLUMNS["thread"],
                                  "rich_text": lists.text_cell(posted["ts"])}])

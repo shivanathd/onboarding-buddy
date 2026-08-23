@@ -148,6 +148,32 @@ def summarise_rows(items):
     return out
 
 
+def state_markdown(items, limit=12):
+    """The List as Slack markdown for a human to read.
+
+    summarise_rows above feeds the model, so it stays flat and boring. This one
+    is for eyes: bold step names, a status marker, and real mentions rather than
+    raw user ids.
+    """
+    marker = {policy.STATUS_OPEN: ":large_blue_circle:",
+              policy.STATUS_DONE: ":white_check_mark:",
+              policy.STATUS_ESCALATED: ":warning:"}
+    out = []
+    for item in items[:limit]:
+        step = lists.text_of(item, policy.COLUMNS["step"])
+        owner = lists.first_user(item, policy.COLUMNS["owner"])
+        due = lists.date_of(item, policy.COLUMNS["due"])
+        status = (lists.select_label(item, policy.COLUMNS["status"], policy.STATUS_LABELS)
+                  or policy.STATUS_OPEN)
+        out.append("%s *%s* %s %s" % (
+            marker.get(status, ""), step,
+            "due " + due.isoformat() if due else "no due date",
+            "<@%s>" % owner if owner else "_unassigned_"))
+    if len(items) > limit:
+        out.append("_and %d more_" % (len(items) - limit))
+    return out
+
+
 def assemble(client, channel, thread_ts=None):
     """Everything the worker knows, in the order ANS-2 requires."""
     items = rows(client)

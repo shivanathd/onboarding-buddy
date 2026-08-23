@@ -9,7 +9,7 @@ brain:   yes for the sentence, with a template fallback that always works
 
 import agent
 import policy
-from tools import lists
+from tools import blocks, lists
 
 def run(client, event, bot_user_id):
     """One emoji, one channel, one meaning. Everything else is ignored.
@@ -50,5 +50,8 @@ def run(client, event, bot_user_id):
 
     said = agent.ask("Confirm a finished onboarding step in one short sentence.",
                      "step=%s hire=%s" % (step, hire), fallback) or fallback
-    client.chat_postMessage(channel=policy.CHANNEL_ID, thread_ts=item.get("ts"), text=said)
+    client.chat_postMessage(channel=policy.CHANNEL_ID, thread_ts=item.get("ts"), text=said,
+                            blocks=[blocks.section(":white_check_mark: " + said),
+                                    blocks.context("Row updated in the List. The List is the "
+                                                   "memory, not this thread.")])
     print("ADVANCE %s is done, row ticked and confirmed in thread" % step, flush=True)
