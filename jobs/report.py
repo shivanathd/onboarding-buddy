@@ -12,9 +12,6 @@ import datetime
 import policy
 from tools import lists
 
-LABELS = {"open": "Open", "done": "Done", "escalated": "Escalated"}
-
-
 def run(client):
     """Post the cohort status. Every number here can be recounted by eye from
     the List, which is the point."""
@@ -28,7 +25,7 @@ def run(client):
     soon = today + datetime.timedelta(days=7)
     counts, no_due, upcoming, oldest = {}, [], [], None
     for item in items:
-        state = lists.select_label(item, policy.COLUMNS["status"], LABELS) or "Open"
+        state = lists.select_label(item, policy.COLUMNS["status"], policy.STATUS_LABELS) or policy.STATUS_OPEN
         counts[state] = counts.get(state, 0) + 1
         step = lists.text_of(item, policy.COLUMNS["step"])
         due = lists.date_of(item, policy.COLUMNS["due"])

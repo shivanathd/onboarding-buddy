@@ -35,10 +35,12 @@ DEMO_MODE = _flag("DEMO_MODE")
 GRACE_SECONDS = 120 if DEMO_MODE else 2 * 24 * 60 * 60
 
 # How long past due before the worker stops nudging and asks a human instead.
-ESCALATION_SECONDS = 300 if DEMO_MODE else 5 * 24 * 60 * 60
+# This is NOT compressed by DEMO_MODE. If it were, every row due yesterday would
+# already be past it, and the plain nudge would never be seen.
+ESCALATION_SECONDS = 5 * 24 * 60 * 60
 
 # How much air an approved extension buys.
-EXTENSION_DAYS = 1 if DEMO_MODE else 3
+EXTENSION_DAYS = 3
 
 # The clock. In production these are two cron lines. DEMO_MODE swaps chase onto
 # a short interval and lets a mention trigger the report on demand.
@@ -57,6 +59,10 @@ SECONDS_BETWEEN_POSTS = 1
 STATUS_OPEN = "Open"
 STATUS_DONE = "Done"
 STATUS_ESCALATED = "Escalated"
+
+# The select column stores lowercase option values and shows these labels.
+# bootstrap.py creates the column with exactly this mapping.
+STATUS_LABELS = {"open": STATUS_OPEN, "done": STATUS_DONE, "escalated": STATUS_ESCALATED}
 
 DONE_REACTION = "white_check_mark"
 
@@ -97,9 +103,9 @@ def missing():
 def clock_description():
     """One line for the boot log, so the room can see which clock is running."""
     if DEMO_MODE:
-        return ("DEMO_MODE on: grace %ds, escalation %ds, chase every %ds, "
-                "report on mention" % (GRACE_SECONDS, ESCALATION_SECONDS,
-                                       CHASE_INTERVAL_SECONDS))
+        return ("DEMO_MODE on: grace %ds, chase every %ds, report on mention. "
+                "Escalation still %d days, uncompressed."
+                % (GRACE_SECONDS, CHASE_INTERVAL_SECONDS, ESCALATION_SECONDS // 86400))
     return ("DEMO_MODE off: grace %d days, escalation %d days, chase daily at "
             "%02d:00, report Mondays %02d:00" % (GRACE_SECONDS // 86400,
                                                  ESCALATION_SECONDS // 86400,

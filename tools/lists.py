@@ -149,6 +149,13 @@ def first_user(item, column_id):
     return values[0] if values else ""
 
 
+def select_value(item, column_id):
+    """The raw option value in a select cell, for example open or escalated."""
+    cell = field(item, column_id)
+    values = (cell or {}).get("select") or []
+    return values[0] if values else ""
+
+
 def select_label(item, column_id, options):
     """A select cell holds option ids. Map one back to its label."""
     cell = field(item, column_id)

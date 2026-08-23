@@ -11,9 +11,6 @@ import agent
 import policy
 from tools import lists
 
-LABELS = {"open": "Open", "done": "Done", "escalated": "Escalated"}
-
-
 def run(client, event, bot_user_id):
     """One emoji, one channel, one meaning. Everything else is ignored.
 
@@ -35,7 +32,7 @@ def run(client, event, bot_user_id):
 
     step = lists.text_of(match, policy.COLUMNS["step"])
     hire = lists.first_user(match, policy.COLUMNS["hire"])
-    if lists.select_label(match, policy.COLUMNS["status"], LABELS) == policy.STATUS_DONE:
+    if lists.select_value(match, policy.COLUMNS["status"]) == policy.STATUS_DONE.lower():
         print("ADVANCE already done, no-op for %s" % step, flush=True)
         return
 
