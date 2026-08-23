@@ -11,15 +11,9 @@ import datetime
 
 import agent
 import policy
-from tools import context, lists
+from tools import blocks, context, lists
 
 APPROVE, DENY = "obb_approve", "obb_stand_down"
-def _button(action_id, label, row_id, style=None):
-    button = {"type": "button", "action_id": action_id, "value": row_id,
-              "text": {"type": "plain_text", "text": label}}
-    return dict(button, style=style) if style else button
-
-
 def open_for(client, adapter, item, days_over):
     """Ask a human. The worker proposes, a human disposes, and the thread is the
     paper trail. One open approval per row, per APR-5."""
@@ -37,11 +31,11 @@ def open_for(client, adapter, item, days_over):
                                "reason from the thread." % (step, days_over))
     posted = client.chat_postMessage(
         channel=policy.CHANNEL_ID, text="Escalation for %s" % step,
-        blocks=[{"type": "section", "text": {"type": "mrkdwn",
-                                             "text": "<@%s> %s" % (policy.MANAGER_ID, draft)}},
-                {"type": "actions", "elements": [
-                    _button(APPROVE, "Approve extension", item["id"], "primary"),
-                    _button(DENY, "Stand down", item["id"])]}])
+        blocks=[blocks.header("Decision needed"),
+                blocks.section("<@%s> %s" % (policy.MANAGER_ID, draft)),
+                blocks.context("*%s* is %d days past grace" % (step, days_over)),
+                blocks.actions(blocks.button(APPROVE, "Approve extension", item["id"], "primary"),
+                               blocks.button(DENY, "Stand down", item["id"]))])
     lists.update_cells(adapter, policy.LIST_ID, item["id"],
                        [{"column_id": policy.COLUMNS["thread"],
                          "rich_text": lists.text_cell(posted["ts"])}])
@@ -74,5 +68,5 @@ def decide(client, action, clicker, message_ts):
                                 text="I could not write the row, so nothing changed. %s" % problem)
         return
     client.chat_update(channel=policy.CHANNEL_ID, ts=message_ts, text=said,
-                       blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": said}}])
+                       blocks=[blocks.section(said), blocks.context("Decided, buttons retired.")])
     print("DECIDED %s on %s by %s" % (action["action_id"], step, clicker), flush=True)

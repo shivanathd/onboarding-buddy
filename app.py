@@ -9,6 +9,7 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 
 import policy
 from jobs import advance, answer, approval, chase, report
+from tools import context
 
 app = App(token=policy.SLACK_BOT_TOKEN)
 BOT_USER_ID = ""
@@ -46,12 +47,11 @@ def start():
     clock.add_job(lambda: report.run(app.client), "cron", hour=policy.REPORT_CRON_HOUR,
                   day_of_week=policy.REPORT_CRON_DAY)
     if policy.DEMO_MODE:
-        clock.add_job(lambda: chase.run(app.client), "interval",
-                      seconds=policy.CHASE_INTERVAL_SECONDS)
+        clock.add_job(lambda: chase.run(app.client), "interval", seconds=policy.CHASE_INTERVAL_SECONDS)
     clock.start()  # UNVERIFIED that this coexists with a socket, rehearsal check 5
-    print("timezone %s, a container runs UTC unless you set TZ. %s"
+    context.brief(app.client)  # read the brief once now, so a bad canvas shows up here
+    print("timezone %s, a container runs UTC unless you set TZ. %s\nworker on shift"
           % (policy.TIMEZONE, policy.clock_description()), flush=True)
-    print("worker on shift", flush=True)
     SocketModeHandler(app, policy.SLACK_APP_TOKEN).start()
     return 0
 
