@@ -20,7 +20,7 @@ if _ENV_FILE.is_file():
         if not _line or _line.startswith("#") or "=" not in _line:
             continue
         _key, _value = _line.split("=", 1)
-        _value = _value.strip().strip("\"'"'"'")
+        _value = _value.strip().strip(chr(34)).strip(chr(39))
         if _value:
             os.environ.setdefault(_key.strip(), _value)
 
