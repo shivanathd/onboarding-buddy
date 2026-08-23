@@ -20,7 +20,7 @@ def on_mention(event, client):
     if policy.REPORT_ON_MENTION and "run report" in (event.get("text") or "").lower():
         report.run(client)
     else:
-        answer.run(client, event)
+        answer.run(client, event, BOT_USER_ID)
 
 
 @app.event("reaction_added")

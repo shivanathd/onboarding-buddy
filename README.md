@@ -134,6 +134,7 @@ One optional bot scope, not in `manifest.json`:
 | Scope | Why you might add it |
 |---|---|
 | `assistant:write` | lets the worker use Slack's own thinking indicator while it reads the List, instead of posting a status message it later edits. Purely cosmetic. Without it the worker behaves identically. |
+| `users:read` | lets the worker put a person's name next to their id when it reads the List, so you can ask about someone by name rather than by mention. Without it, ask using an at mention instead. |
 
 That table is the employment contract. It is short on purpose. A worker that
 can only do these things cannot surprise you in a new category.

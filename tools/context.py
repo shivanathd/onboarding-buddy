@@ -135,6 +135,14 @@ def search(client, query):
 
 # ----------------------------------------------------------------- assembly
 
+def named(client, user_id):
+    """Name and mention together, so a typed name can be matched to a person."""
+    if not user_id:
+        return "unassigned"
+    name = display_name(client, user_id) if client is not None else ""
+    return "%s <@%s>" % (name, user_id) if name else "<@%s>" % user_id
+
+
 def mention(user_id):
     """Mention markup, which Slack renders as a name. An empty cell stays a word.
 
@@ -142,6 +150,29 @@ def mention(user_id):
     scope and does not need it: the client renders the name for us.
     """
     return "<@%s>" % user_id if user_id else "unassigned"
+
+
+_NAMES = {}
+
+
+def display_name(client, user_id):
+    """A person's name, if this app is allowed to look one up.
+
+    Needs users:read, which is optional. Without it this returns nothing and
+    the state falls back to mention markup alone, exactly as before. The cache
+    is rebuildable and holds nothing that matters, so it does not count as
+    process memory.
+    """
+    if not user_id:
+        return ""
+    if user_id not in _NAMES:
+        try:
+            found = client.users_info(user=user_id)["user"]
+            _NAMES[user_id] = (found.get("profile", {}).get("display_name")
+                               or found.get("real_name") or "")
+        except Exception:
+            _NAMES[user_id] = ""
+    return _NAMES[user_id]
 
 
 def mentionise(text):
@@ -159,7 +190,7 @@ def mentionise(text):
     return re.sub(r"(?<![<@\w])(U[A-Z0-9]{7,11})(?![>\w])", wrap, text)
 
 
-def summarise_rows(items):
+def summarise_rows(items, client=None):
     """The List as flat lines for the model to read.
 
     Today leads, and every row says how late it is. That arithmetic belongs in
@@ -181,7 +212,7 @@ def summarise_rows(items):
         else:
             when = "due=%s in=%d_days" % (due.isoformat(), (due - today).days)
         out.append("step=%s hire=%s owner=%s %s status=%s"
-                   % (step, mention(hire), mention(owner), when, status))
+                   % (step, named(client, hire), named(client, owner), when, status))
     return out
 
 
@@ -220,7 +251,7 @@ def assemble(client, channel, thread_ts=None):
         talk = thread_replies(client, channel, thread_ts) + talk
     return {
         "items": items,
-        "state": "\n".join(summarise_rows(items)) or "The List has no rows.",
+        "state": "\n".join(summarise_rows(items, client)) or "The List has no rows.",
         "brief": text,
         "conversation": "\n".join(t for t in talk if t)[:4000],
     }

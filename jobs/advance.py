@@ -9,7 +9,7 @@ brain:   yes for the sentence, with a template fallback that always works
 
 import agent
 import policy
-from tools import blocks, lists
+from tools import blocks, context, lists
 
 def run(client, event, bot_user_id):
     """One emoji, one channel, one meaning. Everything else is ignored.
@@ -48,10 +48,21 @@ def run(client, event, bot_user_id):
                                      "Try again, or edit the row directly.")
         return
 
-    said = agent.ask("Confirm a finished onboarding step in one short sentence.",
-                     "step=%s hire=%s" % (step, hire), fallback) or fallback
+    said = context.mentionise(
+        agent.ask("Confirm a finished onboarding step in one short sentence.",
+                  "step=%s hire=%s" % (step, context.mention(hire)), fallback) or fallback)
     client.chat_postMessage(channel=policy.CHANNEL_ID, thread_ts=item.get("ts"), text=said,
                             blocks=[blocks.section(":white_check_mark: " + said),
                                     blocks.context("Row updated in the List. The List is the "
                                                    "memory, not this thread.")])
-    print("ADVANCE %s is done, row ticked and confirmed in thread" % step, flush=True)
+    # Retire the parent. If it carried approve and stand down buttons, they must
+    # not outlive the row they were asking about.
+    try:
+        client.chat_update(channel=policy.CHANNEL_ID, ts=item.get("ts"),
+                           text="%s is done." % step,
+                           blocks=[blocks.section(":white_check_mark: *%s* is done." % step),
+                                   blocks.context("Closed by <@%s>. No decision needed."
+                                                  % event.get("user"))])
+    except Exception as problem:
+        print("ADVANCE could not retire the parent message, %s" % problem, flush=True)
+    print("ADVANCE %s is done, row ticked and parent retired" % step, flush=True)

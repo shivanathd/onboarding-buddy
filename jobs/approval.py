@@ -53,6 +53,12 @@ def decide(client, action, clicker, message_ts):
     if item is None:
         return
     step = lists.text_of(item, policy.COLUMNS["step"])
+    if lists.select_value(item, policy.COLUMNS["status"]) != policy.STATUS_OPEN.lower():
+        client.chat_update(channel=policy.CHANNEL_ID, ts=message_ts,
+                           text="%s is already closed." % step,
+                           blocks=[blocks.section("*%s* is already closed, so there is "
+                                                  "nothing to decide." % step)])
+        return
     if action["action_id"] == APPROVE:
         due = (lists.date_of(item, policy.COLUMNS["due"]) or datetime.date.today()
                ) + datetime.timedelta(days=policy.EXTENSION_DAYS)

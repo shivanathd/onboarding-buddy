@@ -15,7 +15,7 @@ MENU = ("I keep the onboarding List moving. Ask me where a step or a person "
         "stands, react with a tick to close a step, or say run report.")
 
 
-def run(client, event):
+def run(client, event, bot_user_id=""):
     """Reply in the thread of the mention, grounded in the List first.
 
     UNVERIFIED whether an app_mention payload carries thread_ts for a mention
@@ -30,7 +30,10 @@ def run(client, event):
         return
 
     parent = event.get("thread_ts") or event.get("ts")
-    question = " ".join(w for w in (event.get("text") or "").split() if not w.startswith("<@"))
+    # Strip only the worker's own mention. Anyone else named in the question is
+    # the point of the question and has to survive.
+    question = " ".join(w for w in (event.get("text") or "").split()
+                        if bot_user_id not in w)
     if not question.strip():
         client.chat_postMessage(channel=policy.CHANNEL_ID, thread_ts=parent, text=MENU)
         return
@@ -46,10 +49,9 @@ def run(client, event):
     pretty = context.state_markdown(known["items"])
     fallback = ("I could not compose an answer just now. Here is the raw state:\n"
                 + "\n".join(pretty))
-    reply = agent.ask(known["brief"] + "\n\nAnswer in at most three sentences, as one "
-                      "paragraph. Never write a second paragraph. Only use the state "
-                      "below. If a name is not in it, say so and list the names you "
-                      "do know.",
+    reply = agent.ask(known["brief"] + "\n\nAnswer in under forty words. One short "
+                      "paragraph, never two. Only use the state below. If a name is "
+                      "not in it, say so and list the names you do know.",
                       "State:\n%s\n\nRecent conversation:\n%s"
                       % (known["state"], known["conversation"]),
                       question, fallback=fallback)
