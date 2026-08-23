@@ -1,4 +1,4 @@
-"""Block Kit shapes, in one place.
+"""How the worker presents itself: Block Kit shapes and the status indicator.
 
 Block Kit JSON is verbose and it is shared by the report and the approval flow.
 Keeping it here means the job files stay short enough to read on a projector,
@@ -36,3 +36,22 @@ def button(action_id, label, value, style=None):
 
 def actions(*elements):
     return {"type": "actions", "elements": list(elements)}
+
+
+def thinking(client, channel, thread_ts, on=True):
+    """Slack's native thinking indicator, if this app is allowed to use it.
+
+    Needs assistant:write. That scope is optional, so a refusal here is not a
+    problem: the caller falls back to posting an ordinary status message. Slack
+    accepts this on a normal channel thread as well as in the assistant pane.
+    """
+    try:
+        client.assistant_threads_setStatus(
+            channel_id=channel, thread_ts=thread_ts,
+            status="is thinking..." if on else "",
+            loading_messages=["Reading the List...",
+                              "Checking the job description...",
+                              "Working out what is overdue..."] if on else None)
+        return True
+    except Exception:
+        return False

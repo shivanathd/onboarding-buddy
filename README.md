@@ -129,6 +129,12 @@ App level scope, generated on the app page rather than in the manifest:
 |---|---|
 | `connections:write` | to open the Socket Mode websocket |
 
+One optional bot scope, not in `manifest.json`:
+
+| Scope | Why you might add it |
+|---|---|
+| `assistant:write` | lets the worker use Slack's own thinking indicator while it reads the List, instead of posting a status message it later edits. Purely cosmetic. Without it the worker behaves identically. |
+
 That table is the employment contract. It is short on purpose. A worker that
 can only do these things cannot surprise you in a new category.
 

@@ -35,12 +35,13 @@ def run(client, event):
         client.chat_postMessage(channel=policy.CHANNEL_ID, thread_ts=parent, text=MENU)
         return
 
-    # Say something at once, so a human can see the worker picked this up.
-    status = client.chat_postMessage(channel=policy.CHANNEL_ID, thread_ts=parent,
-                                     text="Reading the List...",
-                                     blocks=[blocks.context(":hourglass_flowing_sand: "
-                                                            "Reading the List and the job "
-                                                            "description...")])
+    # Show that the worker picked this up. Native indicator when the optional
+    # scope is granted, otherwise a plain message we edit into the answer.
+    native = blocks.thinking(client, policy.CHANNEL_ID, parent)
+    status = None if native else client.chat_postMessage(
+        channel=policy.CHANNEL_ID, thread_ts=parent, text="Reading the List...",
+        blocks=[blocks.context(":hourglass_flowing_sand: Reading the List and the job "
+                               "description...")])
     known = context.assemble(client, policy.CHANNEL_ID, event.get("thread_ts"))
     pretty = context.state_markdown(known["items"])
     fallback = ("I could not compose an answer just now. Here is the raw state:\n"
@@ -51,8 +52,12 @@ def run(client, event):
                       "State:\n%s\n\nRecent conversation:\n%s"
                       % (known["state"], known["conversation"]),
                       question, fallback=fallback)
-    client.chat_update(channel=policy.CHANNEL_ID, ts=status["ts"], text=reply,
-                       blocks=[blocks.section(reply),
-                               blocks.context("Grounded in %d steps from the List"
-                                              % len(known["items"]))])
+    body = [blocks.section(reply),
+            blocks.context("Grounded in %d steps from the List" % len(known["items"]))]
+    if native:
+        blocks.thinking(client, policy.CHANNEL_ID, parent, on=False)
+        client.chat_postMessage(channel=policy.CHANNEL_ID, thread_ts=parent,
+                                text=reply, blocks=body)
+    else:
+        client.chat_update(channel=policy.CHANNEL_ID, ts=status["ts"], text=reply, blocks=body)
     print("ANSWER replied in thread %s, %d rows of state" % (parent, len(known["items"])), flush=True)
