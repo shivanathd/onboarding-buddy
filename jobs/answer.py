@@ -46,9 +46,10 @@ def run(client, event):
     pretty = context.state_markdown(known["items"])
     fallback = ("I could not compose an answer just now. Here is the raw state:\n"
                 + "\n".join(pretty))
-    reply = agent.ask(known["brief"] + "\n\nAnswer in two or three sentences. Only use "
-                      "the state below. If a name is not in it, say so and list the "
-                      "names you do know.",
+    reply = agent.ask(known["brief"] + "\n\nAnswer in at most three sentences, as one "
+                      "paragraph. Never write a second paragraph. Only use the state "
+                      "below. If a name is not in it, say so and list the names you "
+                      "do know.",
                       "State:\n%s\n\nRecent conversation:\n%s"
                       % (known["state"], known["conversation"]),
                       question, fallback=fallback)
