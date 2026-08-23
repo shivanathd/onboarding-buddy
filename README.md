@@ -64,7 +64,7 @@ because the next step prints them.
 That creates a List with six columns, seeds a starter cohort, and prints seven
 lines. Paste them over the matching lines in `.env`.
 
-Column ids look like `Col0BS1300PSS`. They are opaque and there is no way to
+Column ids look like `Col0000000000`. They are opaque and there is no way to
 guess them, which is exactly why this step prints a mapping instead of hiding
 one. If you would rather build the List by hand, see the manual path below.
 
