@@ -115,6 +115,20 @@ def text_of(item, column_id):
     return ""
 
 
+def find_by_text(items, column_id, value):
+    """The row whose text cell equals value, or None.
+
+    This is how the loop closes. chase writes a message ts into the Thread cell,
+    and later a reaction on that message finds its way back to this row.
+    """
+    if not value:
+        return None
+    for item in items:
+        if text_of(item, column_id) == value:
+            return item
+    return None
+
+
 def date_of(item, column_id):
     """A date object, or None when the cell is empty. No grace math runs on an
     unknown date, so None is a valid answer and not a failure."""
