@@ -97,6 +97,30 @@ strip tags. The format is documented to vary by canvas generation, so this path
 should always have a fallback. Ours falls back to a file in the repository and
 says so in the log.
 
+### The model thinks before it writes, out of the same budget
+
+This one cost the most time to see, because it fails silently.
+
+The model returns a thinking block before it returns any words, and both come
+out of the same output token allowance. Set the allowance low and you get a
+call that succeeds, returns no text at all, and leaves you staring at a
+fallback while holding a perfectly valid key.
+
+Measured on the same prompt:
+
+    max_tokens=220  stop_reason max_tokens  blocks ['thinking']          text 0 chars
+    max_tokens=600  stop_reason max_tokens  blocks ['thinking', 'text']  text 213 chars
+
+Two lessons. Give the call a generous ceiling, because truncation is a terrible
+way to shorten anything: it either cuts a sentence in half or, as here, removes
+the answer entirely. And control length in the prompt, where it belongs. Asking
+for two sentences works. Starving the model does not.
+
+The second lesson is about logging. The code fell back correctly and said
+nothing about it, because the failure was an empty success rather than an
+exception. Any fallback path worth having is worth a log line, or you will
+debug it twice.
+
 ### Events are load balanced, not duplicated
 
 An app may hold several socket connections at once, and Slack sends each event
