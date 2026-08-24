@@ -174,12 +174,17 @@ returns canvas text, so this path is deliberately defensive.
 
 ## DEMO_MODE
 
-Nobody wants to wait until 9am to see a clock fire. `DEMO_MODE=true` does
-exactly three things:
+Nobody wants to wait until 9am to see a clock fire. `DEMO_MODE=true` changes two
+things, both about the clock:
 
 - grace windows shrink from days to minutes
 - chase runs every 60 seconds instead of on the daily cron
-- report runs when you mention the worker and say "run report"
+
+Asking for the report works either way. Mention the worker, say "run report",
+and it answers whether the clock is compressed or not. The report is read only,
+writes nothing and calls no model, so there was nothing worth gating. It used to
+be gated, and the only thing that produced was a confusing silence: you asked
+for a report and got a conversational answer instead.
 
 The real cron lines stay visible in `app.py`, directly above the demo override.
 The escalation threshold is not compressed, so you still see the difference

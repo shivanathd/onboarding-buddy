@@ -48,7 +48,10 @@ CHASE_CRON_HOUR = 9
 REPORT_CRON_HOUR = 9
 REPORT_CRON_DAY = "mon"
 CHASE_INTERVAL_SECONDS = 60 if DEMO_MODE else 0
-REPORT_ON_MENTION = DEMO_MODE
+# Asking for the report always works. It is read only, writes nothing and calls
+# no model, so there was nothing to protect. Gating it behind DEMO_MODE only
+# produced a confusing silence: you asked for a report and got a chatty answer.
+REPORT_ON_MENTION = True
 
 # Politeness limits. chat.postMessage allows about one message per second to a
 # channel, and no single shift should ever flood a room.
@@ -103,8 +106,8 @@ def missing():
 def clock_description():
     """One line for the boot log, so the room can see which clock is running."""
     if DEMO_MODE:
-        return ("DEMO_MODE on: grace %ds, chase every %ds, report on mention. "
-                "Escalation still %d days, uncompressed."
+        return ("DEMO_MODE on: grace %ds, chase every %ds. Escalation still %d days, "
+                "uncompressed. The report answers whenever asked."
                 % (GRACE_SECONDS, CHASE_INTERVAL_SECONDS, ESCALATION_SECONDS // 86400))
     return ("DEMO_MODE off: grace %d days, escalation %d days, chase daily at "
             "%02d:00, report Mondays %02d:00" % (GRACE_SECONDS // 86400,

@@ -49,9 +49,13 @@ def run(client, event, bot_user_id=""):
     pretty = context.state_markdown(known["items"])
     fallback = ("I could not compose an answer just now. Here is the raw state:\n"
                 + "\n".join(pretty))
-    reply = agent.ask(known["brief"] + "\n\nAnswer in under forty words. One short "
-                      "paragraph, never two. Only use the state below. If a name is "
-                      "not in it, say so and list the names you do know.",
+    reply = agent.ask(known["brief"] + "\n\nYou are replying in Slack and your reply is "
+                      "rendered as Slack markdown, so you can format it. Never say you "
+                      "cannot render or format anything. Use *single asterisks* for "
+                      "bold. When you name more than two things, put each on its own "
+                      "short line starting with a bullet character. Keep the whole "
+                      "reply under ten lines. Answer only from the state below, and if "
+                      "a name is not in it say so and list the names you do know.",
                       "State:\n%s\n\nRecent conversation:\n%s"
                       % (known["state"], known["conversation"]),
                       question, fallback=fallback)
