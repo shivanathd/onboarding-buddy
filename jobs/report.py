@@ -13,6 +13,14 @@ import policy
 from tools import blocks, lists
 
 
+def _list_link(client):
+    """The List's own permalink, asked for rather than assembled out of ids."""
+    try:
+        return client.files_info(file=policy.LIST_ID)["file"]["permalink"]
+    except Exception:
+        return ""
+
+
 def run(client):
     """Post the cohort status. Every number here can be recounted by eye from
     the List, which is the point."""
@@ -46,9 +54,12 @@ def run(client):
     body = [blocks.header("Cohort status"),
             blocks.fields(tiles),
             blocks.divider(),
-            blocks.section("*Due in the next seven days*\n" + ("\n".join(lines) or "nothing")),
-            blocks.context("%d steps in the List. Everything here is countable by eye."
-                           % len(items))]
+            blocks.section("*Due in the next seven days*\n" + ("\n".join(lines) or "nothing"))]
+    link = _list_link(client)
+    if link:
+        body.append(blocks.actions(blocks.link_button("Open the List", link)))
+    body.append(blocks.context("%d steps in the List. Everything here is countable by eye."
+                               % len(items)))
     client.chat_postMessage(channel=policy.CHANNEL_ID, blocks=body,
                             text="Cohort status, %d steps." % len(items))
     print("REPORT %d steps, %s, %d with no due date"

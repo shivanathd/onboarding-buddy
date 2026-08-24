@@ -241,6 +241,25 @@ Chase and Report never call the model, so a shift costs nothing. Answer costs on
 call. An escalation costs one call. On a real cohort that is a handful of calls a
 day, and the shape of the bill is easier to explain than the number.
 
+## How it looks
+
+Every message is Block Kit, and every layout has been validated against Slack
+with the `blocks.validate` method rather than eyeballed once in a channel.
+
+    answer         a section, then a footer saying how many steps it read
+    working        Slack's own thinking indicator while it reads
+    nudge          the step in bold, and what to do about it
+    completion     a tick, and a note that the List holds the state
+    escalation     a header, the drafted reason, two buttons
+    report         a header, a grid of counts, and a link to the List
+
+The answer is deliberately prose rather than a card. Structure goes where there
+is structure. A sentence gets a sentence.
+
+Shapes live in `tools/blocks.py`, one small builder each, so the job files stay
+short enough to read on a projector. See `docs/block-kit.md` for the house
+style, the three mistakes that catch everyone, and how to validate your own.
+
 ## Settings
 
 Every id lives in `.env`, never in code. `.env` is gitignored.

@@ -143,6 +143,25 @@ The first one mattered most. The entire completion flow depends on a person
 reacting to a message the worker itself posted, and no document says whether
 that raises an event. It does.
 
+## Presentation is architecture too
+
+Two of the seven defects were presentation failures, not logic failures: output
+that was correct and unusable because Slack folded it behind a link, and a wall
+of raw user ids where names belonged. Both passed every test, because no test
+asks whether a human can read the result.
+
+So presentation got the same treatment as everything else. Block Kit shapes live
+in one module rather than being inlined in each job, which keeps the job files
+short. And every payload the worker can send is checked with `blocks.validate`,
+a real Slack method, so "it rendered once in my channel" is not the standard of
+proof. See `docs/block-kit.md`.
+
+One detail worth stealing: a url button opens a browser AND sends an interaction
+payload. Unhandled, Slack marks the message with a warning triangle that means
+nobody was listening. So the link button carries an action id, gets acknowledged
+like any other click, and the decision handler ignores anything that is not a
+decision.
+
 ## What the worker is not
 
 It knows one channel and one List. It does not know your customer database and

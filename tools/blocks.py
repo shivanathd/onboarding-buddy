@@ -34,6 +34,17 @@ def button(action_id, label, value, style=None):
     return dict(made, style=style) if style else made
 
 
+def link_button(label, url, action_id="obb_open_link"):
+    """A button that opens a browser.
+
+    It still sends an interaction payload, so it needs an action id and it needs
+    acknowledging, or Slack shows the warning triangle that means nobody was
+    listening. app.py acks it and the decide handler ignores it.
+    """
+    return {"type": "button", "action_id": action_id, "url": url,
+            "text": {"type": "plain_text", "text": label, "emoji": True}}
+
+
 def actions(*elements):
     return {"type": "actions", "elements": list(elements)}
 

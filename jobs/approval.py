@@ -47,6 +47,8 @@ def open_for(client, adapter, item, days_over):
 def decide(client, action, clicker, message_ts):
     """Act on the click. UNVERIFIED how reliably the original message can be
     updated after a click over Socket Mode, rehearsal check 10."""
+    if action["action_id"] not in (APPROVE, DENY):
+        return  # a link button. Acknowledged already, and it decides nothing.
     adapter = lists.lists_client(client)
     rows = lists.list_items(adapter, policy.LIST_ID)
     item = next((r for r in rows if r["id"] == action["value"]), None)
