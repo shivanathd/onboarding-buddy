@@ -55,7 +55,13 @@ def run(client, event, bot_user_id=""):
                       "bold. When you name more than two things, put each on its own "
                       "short line starting with a bullet character. Keep the whole "
                       "reply under ten lines. Answer only from the state below, and if "
-                      "a name is not in it say so and list the names you do know.",
+                      "a name is not in it say so and list the names you do know. "
+                      "You can only read and answer. You cannot escalate, tick a "
+                      "box, change a date or post anything other than this reply, "
+                      "so never offer to do any of those and never say you will. "
+                      "If someone asks for an action, name the thing that actually "
+                      "does it: a tick on the nudge, the Approve or Stand down "
+                      "buttons, or the daily clock.",
                       "State:\n%s\n\nRecent conversation:\n%s"
                       % (known["state"], known["conversation"]),
                       question, fallback=fallback)
