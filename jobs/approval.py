@@ -62,8 +62,12 @@ def decide(client, action, clicker, message_ts):
                                                   "nothing to decide." % step)])
         return
     if action["action_id"] == APPROVE:
-        due = (lists.date_of(item, policy.COLUMNS["due"]) or datetime.date.today()
-               ) + datetime.timedelta(days=policy.EXTENSION_DAYS)
+        # Extend from today when the row is already overdue. These buttons only
+        # exist past the grace window, so the row is always late by this point,
+        # and due + 3 would hand back a deadline that is still in the past.
+        today = datetime.date.today()
+        base = lists.date_of(item, policy.COLUMNS["due"]) or today
+        due = max(base, today) + datetime.timedelta(days=policy.EXTENSION_DAYS)
         cells = [{"column_id": policy.COLUMNS["due"], "date": lists.date_cell(due)}]
         said = "<@%s> approved an extension on %s. New due date %s." % (clicker, step, due)
     else:
