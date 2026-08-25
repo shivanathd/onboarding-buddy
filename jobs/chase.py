@@ -20,6 +20,14 @@ def _seconds_past(due):
             - datetime.datetime.combine(due, datetime.time.min)).total_seconds()
 
 
+def _lateness(item):
+    """Sort key: most overdue first. An escalation is later than the escalation
+    threshold and a nudge is not, so this alone puts every decision above every
+    nudge, and orders the nudges worst first. Rows with no due date sort last."""
+    due = lists.date_of(item, policy.COLUMNS["due"])
+    return -_seconds_past(due) if due else float("inf")
+
+
 def run(client):
     """One shift. Nothing survives in memory between shifts: the Thread cell is
     the only record that a row has already been chased, and the cap is 10 new
@@ -31,7 +39,7 @@ def run(client):
         print("SHIFT aborted, the List read failed with %s" % problem, flush=True)
         return
     opened, past, no_due, held = 0, 0, 0, 0
-    for item in rows:
+    for item in sorted(rows, key=_lateness):
         if lists.select_value(item, policy.COLUMNS["status"]) != policy.STATUS_OPEN.lower():
             continue
         due = lists.date_of(item, policy.COLUMNS["due"])
