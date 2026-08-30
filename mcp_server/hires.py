@@ -42,6 +42,20 @@ def _display_name(user_id):
     return name
 
 
+def _person_or_text(item, column_id):
+    """A name from a cell that may be either a person column or a text column.
+
+    The live List holds the new hire as a person reference; Spec 4's proposed
+    schema holds it as text, because fictional hires have no Slack account.
+    Reading both means the tools survive either List without a code change, and
+    a person column no longer silently reads as an empty string.
+    """
+    plain = lists.text_of(item, column_id)
+    if plain:
+        return plain
+    return _display_name(lists.first_user(item, column_id))
+
+
 def _derive_status(done, escalated, total):
     """A hire is done when every step is, blocked when any step escalated, and
     onboarding otherwise. Order matters: blocked beats done-so-far."""
@@ -68,7 +82,7 @@ def read_hires(deadline):
     by_hire = collections.OrderedDict()
 
     for item in items:
-        hire = lists.text_of(item, cols["hire"]).strip()
+        hire = _person_or_text(item, cols["hire"]).strip()
         if not hire:
             continue
         row = by_hire.get(hire)
@@ -91,7 +105,7 @@ def read_hires(deadline):
             row["_escalated"] += 1
 
         if not row["buddy"]:
-            row["buddy"] = _display_name(lists.first_user(item, cols["owner"]))
+            row["buddy"] = _person_or_text(item, cols["owner"])
 
         # The soonest date still owed. Completed steps cannot be next.
         if status != "done":

@@ -34,10 +34,15 @@ from mcp_server import hires, server
 
 
 # ------------------------------------------------------------- the fake List
-def _row(step, hire, owner, due, status):
+def _row(step, hire, owner, due, status, hire_as_person=False):
+    """hire_as_person mirrors the live List, which holds the new hire as a
+    person reference rather than text. Reading that cell with a text reader
+    returns '' and silently drops the row, which is exactly what happened."""
+    hire_cell = ({"column_id": "c_hire", "user": [hire]} if hire_as_person
+                 else {"column_id": "c_hire", "text": hire})
     return {"fields": [
         {"column_id": "c_step", "text": step},
-        {"column_id": "c_hire", "text": hire},
+        hire_cell,
         {"column_id": "c_owner", "user": [owner]},
         {"column_id": "c_due", "date": [due]},
         {"column_id": "c_status", "select": [status]},
@@ -51,8 +56,11 @@ ROWS = [
     _row("Access badge", "Omar Farouk", "U_LENA", "2026-08-25", "escalated"),
     _row("Manager intro", "Omar Farouk", "U_LENA", "2026-08-28", "open"),
     _row("Laptop delivery", "Sana Iqbal", "U_ARJUN", "2026-08-10", "done"),
+    # the live-List shape: hire held as a person, not text
+    _row("Laptop delivery", "U_TARIQ", "U_LENA", "2026-09-01", "done", hire_as_person=True),
+    _row("Email account", "U_TARIQ", "U_LENA", "2026-09-04", "open", hire_as_person=True),
 ]
-NAMES = {"U_ARJUN": "Arjun Rao", "U_LENA": "Lena Kruger"}
+NAMES = {"U_ARJUN": "Arjun Rao", "U_LENA": "Lena Kruger", "U_TARIQ": "Tariq Hassan"}
 
 
 class WriteAttempted(AssertionError):
@@ -186,7 +194,7 @@ with httpx.Client(timeout=20) as c:
     r = rpc2("tools/call", {"name": "list_new_hires", "arguments": {"status": "all"}})
     res = parse(r)["result"]
     sc = res.get("structuredContent", {})
-    check("S3.1 list_new_hires counts 3 hires", sc.get("count") == 3, sc)
+    check("S3.1 list_new_hires counts 4 hires", sc.get("count") == 4, sc)
     priya = next((h for h in sc.get("new_hires", []) if h["name"] == "Priya Nair"), {})
     check("S3.1 Priya 2/3 steps, onboarding, buddy resolved",
           priya.get("steps_done") == 2 and priya.get("steps_total") == 3
@@ -198,6 +206,10 @@ with httpx.Client(timeout=20) as c:
     check("next_due skips completed steps", priya.get("next_due") == "2026-09-05", priya.get("next_due"))
     check("content carries a plain sentence",
           "Priya Nair" in json.dumps(res.get("content")), res.get("content"))
+
+    tariq = next((h for h in sc.get("new_hires", []) if h["name"] == "Tariq Hassan"), {})
+    check("person-column hire is read, not silently dropped",
+          tariq.get("steps_total") == 2 and tariq.get("steps_done") == 1, tariq)
 
     # filter
     r = rpc2("tools/call", {"name": "list_new_hires", "arguments": {"status": "blocked"}})
@@ -220,7 +232,7 @@ with httpx.Client(timeout=20) as c:
     r = rpc2("tools/call", {"name": "get_onboarding_summary", "arguments": {}})
     sc = parse(r)["result"]["structuredContent"]
     check("summary rollup correct",
-          sc.get("total") == 3 and sc["by_status"] == {"onboarding": 1, "blocked": 1, "done": 1}, sc)
+          sc.get("total") == 4 and sc["by_status"] == {"onboarding": 2, "blocked": 1, "done": 1}, sc)
 
     # S3.3 upstream failure -> tool error, not a dead transport
     class Broken(FakeWeb):
