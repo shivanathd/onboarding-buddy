@@ -20,7 +20,9 @@
         "lists:write",
         "channels:history",
         "files:read",
-        "canvases:read"
+        "canvases:read",
+        "mcp:connect",
+        "users:read"
       ],
       "app": [
         "connections:write"
@@ -40,5 +42,11 @@
     "org_deploy_enabled": false,
     "socket_mode_enabled": true,
     "token_rotation_enabled": false
+  },
+  "mcp_servers": {
+    "onboarding": {
+      "url": "https://worker-production-fd77.up.railway.app/mcp",
+      "auth_type": "slack_identity_auth"
+    }
   }
 }

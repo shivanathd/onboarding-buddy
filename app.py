@@ -50,6 +50,13 @@ def start():
         clock.add_job(lambda: chase.run(app.client), "interval", seconds=policy.CHASE_INTERVAL_SECONDS)
     clock.start()  # UNVERIFIED that this coexists with a socket, rehearsal check 5
     context.brief(app.client)  # read the brief once now, so a bad canvas shows up here
+    # Door two. Imported here, not at module scope, so a missing MCP dependency
+    # cannot stop the worker from taking its shift.
+    try:
+        from mcp_server import server as mcp_server
+        mcp_server.start_in_background()
+    except Exception as exc:
+        print("MCP: not started (%s). Buddy runs on." % exc, flush=True)
     print("timezone %s, a container runs UTC unless you set TZ. %s\nworker on shift"
           % (policy.TIMEZONE, policy.clock_description()), flush=True)
     SocketModeHandler(app, policy.SLACK_APP_TOKEN).start()
