@@ -1,7 +1,7 @@
 {
   "display_information": {
     "name": "Onboarding Buddy",
-    "description": "A digital worker that keeps onboarding steps moving.",
+    "description": "Keeps onboarding steps moving. Answer, Advance, Chase, Report.",
     "background_color": "#1f2937"
   },
   "features": {
@@ -12,6 +12,11 @@
   },
   "oauth_config": {
     "scopes": {
+      "user": [
+        "reactions:write",
+        "chat:write",
+        "channels:write"
+      ],
       "bot": [
         "app_mentions:read",
         "chat:write",
@@ -21,13 +26,12 @@
         "channels:history",
         "files:read",
         "canvases:read",
-        "mcp:connect",
-        "users:read"
-      ],
-      "app": [
-        "connections:write"
+        "assistant:write",
+        "users:read",
+        "mcp:connect"
       ]
-    }
+    },
+    "pkce_enabled": false
   },
   "settings": {
     "event_subscriptions": {
@@ -41,7 +45,8 @@
     },
     "org_deploy_enabled": false,
     "socket_mode_enabled": true,
-    "token_rotation_enabled": false
+    "token_rotation_enabled": false,
+    "is_mcp_enabled": false
   },
   "mcp_servers": {
     "onboarding": {
