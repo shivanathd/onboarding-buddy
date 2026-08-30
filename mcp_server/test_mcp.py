@@ -161,6 +161,14 @@ with httpx.Client(timeout=20) as c:
                            "params": params or {}}).encode()
         return c.post(f"{BASE}/mcp", content=body, headers={**signed(body), **extra})
 
+    # S1.2 GET and DELETE on /mcp are not the transport's business.
+    # Read the status without draining the body: a GET that the server chooses
+    # to answer as a stream would otherwise hang the client here.
+    for verb in ("GET", "DELETE"):
+        with c.stream(verb, f"{BASE}/mcp", headers={**signed(b""), **extra}) as rr:
+            code = rr.status_code
+        check(f"S1.2 {verb} /mcp -> 405", code == 405, code)
+
     # S1.1 tools/list
     r = rpc2("tools/list")
     listed = parse(r)

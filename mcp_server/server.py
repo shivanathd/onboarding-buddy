@@ -137,6 +137,13 @@ class SlackSignedOnly:
         if scope["type"] != "http" or not scope["path"].startswith(self.protect):
             return await self.app(scope, receive, send)
 
+        # REQ-BUDDY-002. Stateless JSON mode answers every call on the POST, so
+        # the SDK's GET handler only opens an SSE stream nothing will ever read.
+        # Refusing it here keeps idle streams off the service entirely.
+        if scope.get("method") not in ("POST",):
+            response = JSONResponse({"error": "method_not_allowed"}, status_code=405)
+            return await response(scope, receive, send)
+
         body = b""
         while True:
             message = await receive()
