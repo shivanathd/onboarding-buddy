@@ -1,13 +1,13 @@
 step,hire,owner,due_offset_days
-Laptop delivery,hire_1,owner_1,-3
-Security training,hire_1,owner_2,-1
-Payroll forms,hire_1,owner_1,2
-Manager intro call,hire_2,owner_2,-5
-Email account,hire_2,owner_1,-2
-Benefits enrolment,hire_2,owner_2,5
-Access badge,hire_3,owner_2,-8
-Code repository access,hire_3,owner_1,1
-Team lunch,hire_3,owner_1,7
-Handbook read,hire_4,,3
-Desk assignment,hire_4,owner_2,
-First review scheduled,hire_4,owner_1,14
+Priya Raman — Laptop delivery,hire_1,owner_1,-3
+Priya Raman — Security training,hire_1,owner_2,-1
+Priya Raman — Payroll forms,hire_1,owner_1,2
+Rahul Menon — Manager intro call,hire_2,owner_2,-5
+Rahul Menon — Email account,hire_2,owner_1,-2
+Rahul Menon — Benefits enrolment,hire_2,owner_2,5
+Sara Okonkwo — Access badge,hire_3,owner_2,-8
+Sara Okonkwo — Code repository access,hire_3,owner_1,1
+Sara Okonkwo — Team lunch,hire_3,owner_1,7
+Tom Whelan — Handbook read,hire_4,,3
+Tom Whelan — Desk assignment,hire_4,owner_2,
+Tom Whelan — First review scheduled,hire_4,owner_1,14

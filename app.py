@@ -1,6 +1,7 @@
 """The worker. Three listeners, two clock lines, one socket. One worker on
 shift at a time, because Slack load balances events across connections.
 """
+import collections
 import re
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -16,6 +17,13 @@ BOT_USER_ID = ""
 MY_BOT_ID = ""
 # {channel:thread -> turns} so a two-bot exchange cannot run away.
 _handoffs = {}
+# Event timestamps already dispatched, so the same message cannot be answered
+# twice. Needed because app_mention and the message listener BOTH deliver a
+# bot's channel mention: verified live, two near-identical replies 0.6s apart to
+# one handoff. It also covers Slack's own event retries, which is why the guard
+# lives here rather than being fixed by dropping one listener.
+_seen = collections.OrderedDict()
+_SEEN_MAX = 500
 
 
 @app.event("app_mention")
@@ -23,15 +31,19 @@ def on_mention(event, client):
     _dispatch_mention(event, client)
 
 
-# app_mention does NOT fire when the mention comes from another bot. Verified:
-# an Agentforce agent posted a real bot_message in a channel this worker is in,
-# containing correct <@bot> markup, and nothing arrived - no reply, no log line.
-# Slack documents the bot-to-bot exclusion only for DMs and is silent on
-# channels; channels behave the same way.
+# app_mention and a bot's channel mention: the behaviour is INTERMITTENT, so this
+# worker listens on both paths and dedupes.
 #
-# So agent-to-agent handoff needs the message event instead. Register the string
-# "message", never "message.channels": Bolt's _verify_message_event_type raises
-# on any type starting "message.".
+# First observation: an Agentforce agent posted a real bot_message with correct
+# <@bot> markup and app_mention did not fire at all - no reply, no log line.
+# That is why the message listener below was added.
+# Second observation, same setup: BOTH fired, producing two near-identical
+# replies 0.6s apart to one handoff.
+#
+# Do not "fix" this by deleting a listener. Keeping both plus the ts guard in
+# _dispatch_mention is correct under either behaviour, and also absorbs Slack's
+# event retries. Register the string "message", never "message.channels":
+# Bolt's _verify_message_event_type raises on any type starting "message.".
 @app.event("message")
 def on_message(event, client):
     """Wake on a bot's mention. Everything app_mention gave for free is re-done
@@ -61,6 +73,14 @@ def on_message(event, client):
 
 
 def _dispatch_mention(event, client):
+    # Both listeners land here, so this is the only place the guard has to be.
+    key = "%s:%s" % (event.get("channel"), event.get("ts"))
+    if key in _seen:
+        print("DUPLICATE dropped a second delivery of %s" % key, flush=True)
+        return
+    _seen[key] = True
+    while len(_seen) > _SEEN_MAX:
+        _seen.popitem(last=False)   # bounded, so a long shift cannot grow it forever
     if policy.REPORT_ON_MENTION and "run report" in (event.get("text") or "").lower():
         report.run(client)
     else:
