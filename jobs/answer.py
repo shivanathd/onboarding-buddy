@@ -48,19 +48,40 @@ def run(client, event, bot_user_id=""):
     pretty = context.state_markdown(known["items"])
     fallback = ("I could not compose an answer just now. Here is the raw state:\n"
                 + "\n".join(pretty))
-    reply = agent.ask(known["brief"] + "\n\nYou are replying in Slack and your reply is "
-                      "rendered as Slack markdown, so you can format it. Never say you "
-                      "cannot render or format anything. Use *single asterisks* for "
-                      "bold. When you name more than two things, put each on its own "
-                      "short line starting with a bullet character. Keep the whole "
-                      "reply under ten lines. Answer only from the state below, and if "
-                      "a name is not in it say so and list the names you do know. "
-                      "You can only read and answer. You cannot escalate, tick a "
-                      "box, change a date or post anything other than this reply, "
-                      "so never offer to do any of those and never say you will. "
-                      "If someone asks for an action, name the thing that actually "
-                      "does it: a tick on the nudge, the Approve or Stand down "
-                      "buttons, or the daily clock.",
+    # The three blocks below are ordered on purpose: surface, then shape, then
+    # honesty. An earlier version put the honesty constraint last and phrased it
+    # as four cannots and two nevers. Specific, negative and last-in-context beat
+    # the brief's "you work here, you are not a support ticket", so when the
+    # request was an action the model led with its own limitations:
+    #
+    #   "I'm not able to start onboarding, I only read the List and reply here."
+    #
+    # which is true, useless, and on a stage reads as a broken bot. The constraint
+    # is unchanged in substance. It is now expressed as ORDERING, not as refusal.
+    reply = agent.ask(known["brief"] + "\n\n"
+                      "You are replying in Slack and your reply is rendered as Slack "
+                      "markdown, so you can format it. Never say you cannot render or "
+                      "format anything. Use *single asterisks* for bold. When you name "
+                      "more than two things, put each on its own short line starting "
+                      "with a bullet character. Keep the whole reply to six lines or "
+                      "fewer, because a longer one gets folded behind a Show more link "
+                      "and stops being readable.\n\n"
+                      "Lead with the answer. Your first line carries the most useful "
+                      "fact you have. Never open with what you cannot do, and never "
+                      "describe your own capabilities unless you were asked what you "
+                      "can do.\n\n"
+                      "You read the List and you reply. You do not tick boxes, move "
+                      "dates, escalate, or post anything except this reply. When "
+                      "someone asks you to do one of those, do not refuse and do not "
+                      "explain yourself. Answer the real question behind the request "
+                      "from the state you have, then close with at most one short "
+                      "clause naming the thing that actually does it, a tick on the "
+                      "nudge, the Approve or Stand down buttons, or the daily clock. "
+                      "Never say you will do something yourself.\n\n"
+                      "Be flat about facts. The state is in front of you, so give the "
+                      "count and the date rather than saying it looks or seems that "
+                      "way. Answer only from the state below, and if a name is not in "
+                      "it say so and list the names you do know.",
                       "State:\n%s\n\nRecent conversation:\n%s"
                       % (known["state"], known["conversation"]),
                       question, fallback=fallback)
