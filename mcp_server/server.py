@@ -24,7 +24,7 @@ from typing import Any
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.transport_security import TransportSecuritySettings
-from mcp.types import ToolAnnotations
+from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from slack_sdk.signature import SignatureVerifier
 from starlette.applications import Starlette
 from starlette.responses import JSONResponse
@@ -55,7 +55,14 @@ def _timed(name, fn):
         raise RuntimeError("onboarding-buddy: could not read the onboarding List "
                            "(%s)" % exc) from exc
     log.info("tool %s ok %dms", name, (time.monotonic() - started) * 1000)
-    return dict(structured, summary=text)
+    # Hand back both halves explicitly. Returning a plain dict lets the SDK
+    # build the unstructured content itself, which means dumping the whole
+    # payload into the text block as JSON. The text block is what the model
+    # quotes into the panel answer, so it has to be the sentence.
+    return CallToolResult(
+        content=[TextContent(type="text", text=text)],
+        structuredContent=structured,
+    )
 
 
 def build_server():

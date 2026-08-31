@@ -204,8 +204,12 @@ with httpx.Client(timeout=20) as c:
     sana = next((h for h in sc.get("new_hires", []) if h["name"] == "Sana Iqbal"), {})
     check("all steps done -> hire status done", sana.get("status") == "done", sana)
     check("next_due skips completed steps", priya.get("next_due") == "2026-09-05", priya.get("next_due"))
-    check("content carries a plain sentence",
-          "Priya Nair" in json.dumps(res.get("content")), res.get("content"))
+    blocks = [b for b in (res.get("content") or []) if b.get("type") == "text"]
+    body = blocks[0]["text"] if blocks else ""
+    check("content is the plain sentence, not a JSON dump",
+          "Priya Nair" in body and not body.lstrip().startswith("{"), body[:120])
+    check("structuredContent still carries the data",
+          isinstance(sc.get("new_hires"), list), type(sc.get("new_hires")))
 
     tariq = next((h for h in sc.get("new_hires", []) if h["name"] == "Tariq Hassan"), {})
     check("person-column hire is read, not silently dropped",
