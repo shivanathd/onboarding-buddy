@@ -23,6 +23,20 @@ def _link(client):
         return ""
 
 
+def _consultant(step):
+    """The consultant's name, when the step text carries one.
+
+    Steps read "Sara Okonkwo <emdash> Access badge". The name lives in the TEXT
+    rather than in a column because the List's New hire column is a PERSON
+    column, and this workspace has one member, so grouping by that column rolls
+    all twelve rows onto one human and the card ends up saying
+    "@Shivanath 12 open, 5 late" under a list of four named consultants.
+    Grouping by the text is what makes By person say something true.
+    """
+    parts = step.split(" %s " % chr(8212))
+    return parts[0].strip() if len(parts) > 1 else ""
+
+
 def _read(items, today):
     """Everything the card needs, counted once."""
     counts, overdue, upcoming, no_due, people = {}, [], [], [], {}
@@ -33,7 +47,8 @@ def _read(items, today):
         hire = lists.first_user(item, policy.COLUMNS["hire"])
         owner = lists.first_user(item, policy.COLUMNS["owner"])
         due = lists.date_of(item, policy.COLUMNS["due"])
-        seen = people.setdefault(hire, {"total": 0, "late": 0})
+        label = _consultant(step) or (("<@%s>" % hire) if hire else "unassigned")
+        seen = people.setdefault(label, {"total": 0, "late": 0})
         seen["total"] += 1
         if due is None:
             no_due.append(step)
@@ -68,8 +83,8 @@ def run(client):
                      for days, step, owner in overdue[:5]) or "nothing overdue"
     soon = "\n".join("*%s* %s" % (step, when.isoformat())
                       for when, step in upcoming[:5]) or "nothing due this week"
-    who = "  |  ".join("<@%s> %d open, %d late" % (uid, seen["total"], seen["late"])
-                       for uid, seen in list(people.items())[:4] if uid)
+    who = "\n".join("*%s* %d open, %d late" % (label, seen["total"], seen["late"])
+                     for label, seen in sorted(people.items())[:6])
 
     body = [blocks.header("Cohort status"),
             blocks.fields(tiles),
