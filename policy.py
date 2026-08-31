@@ -69,12 +69,24 @@ STATUS_LABELS = {"open": STATUS_OPEN, "done": STATUS_DONE, "escalated": STATUS_E
 
 DONE_REACTION = "white_check_mark"
 
+# Channels the worker will answer in. CHANNEL_ID stays the single primary channel
+# it posts reports and chases to; CHANNELS is the set it will *answer* in, so a
+# demo can run in the Salesforce record channel without silencing the original.
+CHANNELS = {c.strip() for c in os.environ.get("CHANNEL_ID", "").split(",") if c.strip()}
+
+# Only these bot ids may wake the worker by mentioning it in a channel. Empty
+# means allow any bot, which is fine for a demo but not for a shared workspace.
+HANDOFF_BOT_IDS = {b.strip() for b in os.environ.get("HANDOFF_BOT_IDS", "").split(",") if b.strip()}
+
+# How many times one bot-to-bot thread may bounce before the worker stops.
+MAX_HANDOFF_TURNS = int(os.environ.get("MAX_HANDOFF_TURNS", "2"))
+
 # Ids and secrets. No defaults, no literals in code. app.py checks these at boot
 # and refuses to start half configured.
 SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN", "")
 SLACK_APP_TOKEN = os.environ.get("SLACK_APP_TOKEN", "")
 ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "")
-CHANNEL_ID = os.environ.get("CHANNEL_ID", "")
+CHANNEL_ID = os.environ.get("CHANNEL_ID", "").split(",")[0].strip()
 MANAGER_ID = os.environ.get("MANAGER_ID", "")
 CANVAS_FILE_ID = os.environ.get("CANVAS_FILE_ID", "")
 LIST_ID = os.environ.get("LIST_ID", "")

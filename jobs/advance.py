@@ -20,7 +20,7 @@ def run(client, event, bot_user_id):
     """
     item = event.get("item") or {}
     if (event.get("reaction") != policy.DONE_REACTION
-            or item.get("channel") != policy.CHANNEL_ID
+            or item.get("channel") not in policy.CHANNELS
             or event.get("user") == bot_user_id):
         return
 

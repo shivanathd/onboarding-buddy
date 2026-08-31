@@ -37,7 +37,8 @@
     "event_subscriptions": {
       "bot_events": [
         "app_mention",
-        "reaction_added"
+        "reaction_added",
+        "message.channels"
       ]
     },
     "interactivity": {

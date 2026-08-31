@@ -21,11 +21,10 @@ def run(client, event, bot_user_id=""):
     UNVERIFIED whether an app_mention payload carries thread_ts for a mention
     made inside a thread, rehearsal check 2b. Both are handled.
     """
-    if event.get("channel") != policy.CHANNEL_ID:
+    if event.get("channel") not in policy.CHANNELS:
         # Not threaded on purpose: a redirect belongs where the person is looking.
         client.chat_postMessage(channel=event.get("channel"),
-                                text="I only work in one channel. Please use that channel "
-                                     "and I will answer there.")
+                                text="I do not work in this channel. Please use the onboarding channel and I will answer there.")
         print("ANSWER redirected a mention from another channel", flush=True)
         return
 

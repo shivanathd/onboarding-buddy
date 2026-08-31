@@ -13,10 +13,54 @@ from tools import context
 
 app = App(token=policy.SLACK_BOT_TOKEN)
 BOT_USER_ID = ""
+MY_BOT_ID = ""
+# {channel:thread -> turns} so a two-bot exchange cannot run away.
+_handoffs = {}
 
 
 @app.event("app_mention")
 def on_mention(event, client):
+    _dispatch_mention(event, client)
+
+
+# app_mention does NOT fire when the mention comes from another bot. Verified:
+# an Agentforce agent posted a real bot_message in a channel this worker is in,
+# containing correct <@bot> markup, and nothing arrived - no reply, no log line.
+# Slack documents the bot-to-bot exclusion only for DMs and is silent on
+# channels; channels behave the same way.
+#
+# So agent-to-agent handoff needs the message event instead. Register the string
+# "message", never "message.channels": Bolt's _verify_message_event_type raises
+# on any type starting "message.".
+@app.event("message")
+def on_message(event, client):
+    """Wake on a bot's mention. Everything app_mention gave for free is re-done
+    here, because a message listener sees every message in every channel."""
+    if event.get("subtype") not in (None, "bot_message"):
+        return                                   # joins, edits, file shares
+    author_bot = event.get("bot_id")
+    if not author_bot:
+        return                                   # humans already arrive via app_mention
+    if author_bot == MY_BOT_ID:
+        return                                   # never answer ourselves
+    if BOT_USER_ID not in (event.get("text") or ""):
+        return                                   # not addressed to us
+    if policy.HANDOFF_BOT_IDS and author_bot not in policy.HANDOFF_BOT_IDS:
+        print("MESSAGE ignored a mention from unlisted bot %s" % author_bot, flush=True)
+        return                                   # allowlist, so only the deal desk can wake us
+    # Loop guard. Two bots that can each mention the other will ping-pong for as
+    # long as the room lets them, and nothing in the answer path rate limits
+    # itself: MAX_NEW_THREADS_PER_SHIFT only caps chase.
+    key = "%s:%s" % (event.get("channel"), event.get("thread_ts") or event.get("ts"))
+    if _handoffs.get(key, 0) >= policy.MAX_HANDOFF_TURNS:
+        print("MESSAGE loop guard stopped handoff %s" % key, flush=True)
+        return
+    _handoffs[key] = _handoffs.get(key, 0) + 1
+    print("MESSAGE handoff from bot %s, turn %d" % (author_bot, _handoffs[key]), flush=True)
+    _dispatch_mention(event, client)
+
+
+def _dispatch_mention(event, client):
     if policy.REPORT_ON_MENTION and "run report" in (event.get("text") or "").lower():
         report.run(client)
     else:
@@ -39,8 +83,13 @@ def start():
     if gaps:
         print("Not starting. These settings are empty: %s" % ", ".join(gaps), flush=True)
         return 1
-    global BOT_USER_ID
-    BOT_USER_ID = app.client.auth_test()["user_id"]
+    global BOT_USER_ID, MY_BOT_ID
+    who = app.client.auth_test()
+    BOT_USER_ID = who["user_id"]
+    # Our own bot_id, so the message listener can tell our posts from another
+    # bot's. Bolt's IgnoringSelfEvents already covers app_mention, but a plain
+    # message listener sees everything and has to check for itself.
+    MY_BOT_ID = who.get("bot_id") or ""
     clock = BackgroundScheduler(timezone=policy.TIMEZONE)
     # The two real cron lines. DEMO_MODE adds the compressed one underneath.
     clock.add_job(lambda: chase.run(app.client), "cron", hour=policy.CHASE_CRON_HOUR)
