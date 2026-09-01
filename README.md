@@ -117,6 +117,50 @@ that surprises people, so set `TZ` to an IANA name such as `Europe/London`. The
 worker prints the timezone it is actually using on every boot. Believe the log,
 not your assumption.
 
+## A second door: the MCP server
+
+The same process answers in two places. Slack events arrive over Socket Mode and
+are handled by `app.py`; tool calls arrive over HTTP at `/mcp` and are handled by
+`mcp_server/`. One deploy, one List, two ways in.
+
+The door is **read only**. It reports on the onboarding List and cannot change it,
+which is deliberate: a tool call carries no human in the loop, so it gets no verbs
+that write.
+
+| Tool | Answers |
+|---|---|
+| `get_onboarding_summary` | how many people are onboarding, blocked, done |
+| `list_new_hires` | every person, with their open and late step counts |
+| `get_onboarding_status` | one named person's steps, due dates and status |
+
+### Only Slack may knock
+
+`/mcp` verifies a Slack request signature on every call and returns `401` to
+everything else. That is not a bearer token you can copy into another client, and
+it is not optional:
+
+```python
+# mcp_server/server.py
+class SignatureGate:
+    """ASGI middleware. Nothing reaches /mcp without a valid Slack signature."""
+```
+
+The manifest registers the server with `auth_type: slack_identity_auth`, so the
+caller's Slack identity travels with the call. A generic MCP client pointed at
+this URL gets a 401, by design.
+
+You can prove the door is up without any credentials at all:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -X POST \
+  -H 'Content-Type: application/json' -d '{}' \
+  https://<your-app>.up.railway.app/mcp
+# 401 -> mounted, and refusing unsigned callers
+```
+
+To turn it on for a workspace, set `is_mcp_enabled: true` in the manifest and
+point `mcp_servers.onboarding.url` at your deployment.
+
 ## One worker on shift at a time
 
 This matters more than it sounds. Slack allows up to ten concurrent Socket Mode
