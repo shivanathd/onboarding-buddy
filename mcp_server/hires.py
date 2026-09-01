@@ -56,6 +56,20 @@ def _person_or_text(item, column_id):
     return _display_name(lists.first_user(item, column_id))
 
 
+def _consultant_from_step(item):
+    """The consultant's name out of the step text, when it carries one.
+
+    Steps read "Sara Okonkwo <emdash> Access badge". The name lives in the TEXT
+    because the List's New hire column is a PERSON column, and a person column
+    cannot hold someone who has no Slack account. Keying the aggregation on that
+    column instead collapses every row onto the one human in the workspace, so
+    four consultants report as "1 new hires" and a lookup by name finds nothing.
+    """
+    step = lists.text_of(item, policy.COLUMNS["step"]) or ""
+    parts = step.split(" %s " % chr(8212))
+    return parts[0].strip() if len(parts) > 1 else ""
+
+
 def _derive_status(done, escalated, total):
     """A hire is done when every step is, blocked when any step escalated, and
     onboarding otherwise. Order matters: blocked beats done-so-far."""
@@ -82,7 +96,9 @@ def read_hires(deadline):
     by_hire = collections.OrderedDict()
 
     for item in items:
-        hire = _person_or_text(item, cols["hire"]).strip()
+        # The step text wins: it names the actual consultant. The person column
+        # is the fallback for a List whose steps carry no name.
+        hire = (_consultant_from_step(item) or _person_or_text(item, cols["hire"])).strip()
         if not hire:
             continue
         row = by_hire.get(hire)
