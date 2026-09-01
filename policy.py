@@ -78,6 +78,12 @@ CHANNELS = {c.strip() for c in os.environ.get("CHANNEL_ID", "").split(",") if c.
 # means allow any bot, which is fine for a demo but not for a shared workspace.
 HANDOFF_BOT_IDS = {b.strip() for b in os.environ.get("HANDOFF_BOT_IDS", "").split(",") if b.strip()}
 
+# The Slack user id of the Agentforce agent in this channel. The worker cannot
+# touch Salesforce and never will, so when someone asks it to move a deal it
+# hands the ask to whoever can. Empty means there is no such agent here and the
+# worker simply says what it cannot do, which is the old behaviour.
+AGENTFORCE_USER_ID = os.environ.get("AGENTFORCE_USER_ID", "").strip()
+
 # How many times one bot-to-bot thread may bounce before the worker stops.
 MAX_HANDOFF_TURNS = int(os.environ.get("MAX_HANDOFF_TURNS", "2"))
 

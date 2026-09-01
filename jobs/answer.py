@@ -58,6 +58,23 @@ def run(client, event, bot_user_id=""):
     #
     # which is true, useless, and on a stage reads as a broken bot. The constraint
     # is unchanged in substance. It is now expressed as ORDERING, not as refusal.
+    # Salesforce is not ours. When the ask is a CRM change, name the one thing in
+    # this channel that can make it instead of listing our own limitations. The
+    # agent will refuse for its own reasons, and that refusal is the honest
+    # answer to "why does a person still have to do this".
+    crm_handoff = ""
+    if policy.AGENTFORCE_USER_ID:
+        crm_handoff = (
+            "\n\nThe deal, its stage and its close are Salesforce records. You cannot "
+            "touch them and you never will. The only thing in this channel that can is "
+            "the Agentforce agent <@%s>. When someone asks you to move a stage, close "
+            "a deal, or change any field on the opportunity, answer from the List "
+            "first, then end your reply by addressing <@%s> directly, in one sentence, "
+            "with the exact change being asked for. Write the handle exactly as "
+            "<@%s>. Do not address that agent about anything else."
+            % (policy.AGENTFORCE_USER_ID, policy.AGENTFORCE_USER_ID,
+               policy.AGENTFORCE_USER_ID))
+
     reply = agent.ask(known["brief"] + "\n\n"
                       "You are replying in Slack and your reply is rendered as Slack "
                       "markdown, so you can format it. Never say you cannot render or "
@@ -81,7 +98,8 @@ def run(client, event, bot_user_id=""):
                       "Be flat about facts. The state is in front of you, so give the "
                       "count and the date rather than saying it looks or seems that "
                       "way. Answer only from the state below, and if a name is not in "
-                      "it say so and list the names you do know.",
+                      "it say so and list the names you do know."
+                      + crm_handoff,
                       "State:\n%s\n\nRecent conversation:\n%s"
                       % (known["state"], known["conversation"]),
                       question, fallback=fallback)
