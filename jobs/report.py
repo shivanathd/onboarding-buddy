@@ -95,9 +95,11 @@ def run(client):
         body.append(blocks.section("*By person*\n" + who))
     link = _link(client)
     if link:
-        body.append(blocks.actions(blocks.link_button("Open the List", link)))
-    body.append(blocks.context("%d steps in the List. Every number here is countable by eye."
-                               % len(items)))
+        body.append(blocks.actions(blocks.link_button("Open the onboarding List", link)))
+    body.append(blocks.context(
+        "%d onboarding steps, in a Slack List this worker owns. Countable by eye. "
+        "The deal, the job and the four placements are Salesforce records, and this "
+        "worker never writes to either system." % len(items)))
 
     client.chat_postMessage(channel=policy.CHANNEL_ID, blocks=body,
                             text="Cohort status, %d steps, %d overdue."
