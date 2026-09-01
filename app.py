@@ -81,8 +81,19 @@ def _dispatch_mention(event, client):
     _seen[key] = True
     while len(_seen) > _SEEN_MAX:
         _seen.popitem(last=False)   # bounded, so a long shift cannot grow it forever
-    if policy.REPORT_ON_MENTION and "run report" in (event.get("text") or "").lower():
+    said = (event.get("text") or "").lower()
+    if policy.REPORT_ON_MENTION and "run report" in said:
         report.run(client)
+    elif "run chase" in said:
+        # A manual trigger for the clock. The daily cron is the real path, but a
+        # cron you cannot invoke is a cron you cannot demo, and waiting until
+        # 09:00 in front of a room is not an option.
+        #
+        # Safe to call repeatedly: chase skips any row that already carries a
+        # thread id, and MAX_NEW_THREADS_PER_SHIFT caps how many it opens. So a
+        # second "run chase" with nothing newly past grace posts nothing at all.
+        print("CHASE invoked by mention", flush=True)
+        chase.run(client)
     else:
         answer.run(client, event, BOT_USER_ID)
 
