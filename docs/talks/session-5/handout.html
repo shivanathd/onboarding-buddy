@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Connect the fleet — build it yourself</title>
+<style>
+  :root{ --ink:#11131a; --mid:#5c6478; --line:#e4e7ef; --bg:#fcfcfe;
+         --a:#5b5bd6; --b:#0f9d58; --w:#c2410c; --lo:#94a3b8; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:32px 24px 90px}
+
+  header{border-bottom:2px solid var(--ink);padding-bottom:18px;margin-bottom:26px}
+  header h1{font-size:32px;margin:0 0 6px;letter-spacing:-.025em}
+  header .sub{color:var(--mid);font-size:15.5px}
+  header .meta{margin-top:12px;font-size:13.5px;color:var(--mid)}
+
+  h2{font-size:23px;margin:44px 0 4px;letter-spacing:-.02em}
+  h2 .n{color:var(--lo);font-variant-numeric:tabular-nums;margin-right:10px}
+  h3{font-size:16.5px;margin:26px 0 6px;letter-spacing:-.01em}
+  p{margin:10px 0}
+
+  .lede{color:var(--mid);font-size:15.5px;margin:2px 0 14px}
+
+  .rung{border:1px solid var(--line);border-left:4px solid var(--a);border-radius:12px;
+        background:#fff;padding:20px 22px;margin:16px 0 0}
+  .rung.r0{border-left-color:var(--b)}
+  .rung.r1{border-left-color:#7c3aed}
+  .rung.r2{border-left-color:#0891b2}
+  .rung.r3{border-left-color:var(--w)}
+  .cost{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.08em;
+        text-transform:uppercase;color:#fff;background:var(--mid);border-radius:999px;
+        padding:4px 11px;margin-bottom:10px}
+  .rung.r0 .cost{background:var(--b)} .rung.r1 .cost{background:#7c3aed}
+  .rung.r2 .cost{background:#0891b2} .rung.r3 .cost{background:var(--w)}
+  .youget{font-weight:600;margin:2px 0 12px}
+
+  pre{background:#12141c;color:#eef0f6;border-radius:9px;padding:14px 16px;margin:12px 0;
+      font:13.5px/1.62 ui-monospace,SFMono-Regular,Menlo,monospace;
+      white-space:pre-wrap;word-break:break-word;overflow-x:auto}
+  code{font:0.9em ui-monospace,SFMono-Regular,Menlo,monospace;
+       background:#eef0f6;padding:1px 5px;border-radius:4px}
+  pre code{background:none;padding:0}
+
+  .bite{background:#fff6ee;border-left:3px solid var(--w);padding:11px 14px;
+        border-radius:0 8px 8px 0;margin:14px 0;font-size:14.5px}
+  .bite b{color:var(--w)}
+  .why{background:#eefaf3;border-left:3px solid var(--b);padding:11px 14px;
+       border-radius:0 8px 8px 0;margin:14px 0;font-size:14.5px}
+
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+  th{text-align:left;font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+     color:var(--mid);border-bottom:2px solid var(--line);padding:8px 10px}
+  td{border-bottom:1px solid var(--line);padding:9px 10px;vertical-align:top}
+  td:first-child{font-weight:600;white-space:nowrap}
+
+  ul{margin:10px 0;padding-left:22px} li{margin:5px 0}
+  .dead{border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:12px 0;background:#fff}
+  .dead h4{margin:0 0 4px;font-size:15px}
+  .dead p{margin:4px 0;font-size:14.5px;color:var(--mid)}
+  .dead p b{color:var(--ink)}
+
+  footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);
+         color:var(--mid);font-size:13.5px}
+  a{color:var(--a)}
+  @media print{
+    body{background:#fff} .wrap{max-width:none}
+    pre{background:#f3f4f8;color:#111;border:1px solid #ddd}
+    .rung,.dead{break-inside:avoid} h2{break-after:avoid}
+  }
+</style>
+</head>
+<body><div class="wrap">
+
+<header>
+  <h1>Connect the fleet</h1>
+  <div class="sub">Two agents, one Slack channel, and a human at the end — and how to build it yourself.</div>
+  <div class="meta">
+    Session 5 of 5 · Slack as your second brain · Slack Community Hyderabad · 2 September 2026<br>
+    Shivanath Devinarayanan · Chief Digital Labor &amp; Technology Officer, Asymbl
+  </div>
+</header>
+
+<p class="lede">
+Everything in the talk was live. Everything below is real: the commands ran, the config is
+deployed, and the failures are ones I actually hit. <b>Read it as a ladder, not a manual.</b>
+Each rung is a complete, useful thing on its own. Stop wherever you like — rung 0 alone is
+worth your Tuesday.
+</p>
+
+
+<!-- ─────────────────── BRING YOUR OWN ─────────────────── -->
+<h2><span class="n">§0</span>Bring your own</h2>
+<p class="lede">Every identifier below was replaced with a placeholder before this was published.
+Substitute your own and everything here works. Nothing in this pack points at my workspace.</p>
+
+<table>
+  <tr><th>Placeholder</th><th>What it is</th><th>Where to get it</th></tr>
+  <tr><td><code>YOUR_WORKER_USER_ID</code></td><td>your worker&rsquo;s Slack user id, <code>U…</code></td>
+      <td><code>auth.test</code> with its bot token, or type <code>@yourbot</code> in Slack and copy the link</td></tr>
+  <tr><td><code>YOUR_AGENT_USER_ID</code></td><td>the Agentforce agent&rsquo;s Slack user id</td>
+      <td>same, once the agent is installed and in a channel</td></tr>
+  <tr><td><code>YOUR_LIST_ID</code></td><td>the Slack List, <code>F…</code></td>
+      <td>printed by <code>bootstrap.py</code> when it creates the List</td></tr>
+  <tr><td><code>&lt;your record channel&gt;</code></td><td>the channel bound to your record, <code>C…</code></td>
+      <td>channel name &rarr; View channel details &rarr; bottom of the About tab</td></tr>
+  <tr><td><code>&lt;your org id&gt;</code>, <code>&lt;your-org&gt;.sandbox…</code></td><td>your Salesforce org</td>
+      <td>Setup &rarr; Company Information, and My Domain</td></tr>
+  <tr><td><code>&lt;your-app&gt;.up.railway.app</code></td><td>wherever you host the worker</td>
+      <td>Railway gives you one; any host with outbound HTTPS works, Socket Mode needs no inbound</td></tr>
+  <tr><td><code>&lt;pack&gt;</code>, <code>&lt;repo&gt;</code>, <code>&lt;home&gt;</code></td><td>local paths in the runbook</td>
+      <td>wherever you cloned things. They are illustrative, not required</td></tr>
+</table>
+
+<div class="why">
+<b>The one thing you cannot substitute</b> is the Agentforce agent&rsquo;s Slack registration. Read
+&sect;3 rung 1 before you plan a demo date &mdash; in my sandbox a brand-new agent never reached
+Slack&rsquo;s review queue, and I could not find that documented anywhere.
+</div>
+
+<!-- ─────────────────── WHAT YOU SAW ─────────────────── -->
+<h2><span class="n">§1</span>What you actually saw</h2>
+<p class="lede">Three runtimes, one channel, and nothing talking directly to anything else.</p>
+
+<pre>   Salesforce org                Slack channel               Railway
+   ┌──────────────┐            ┌─────────────┐            ┌──────────────┐
+   │ Agentforce   │◄──────────►│  #meridian  │◄──────────►│ Python worker│
+   │ agent "Polly"│  Slack app │   (bound to │ Socket Mode│   "buddy"    │
+   └──────────────┘            │  an Opp)    │            └──────────────┘
+          │                    └──────┬──────┘                    │
+     reads/writes                     │                    reads/writes
+     CRM records                     you                   a Slack List
+
+   Nobody polls anybody. The channel is the only meeting point.</pre>
+
+<table>
+  <tr><th>Piece</th><th>What it is</th><th>What it can touch</th></tr>
+  <tr><td>The channel</td><td>A Salesforce <b>record channel</b> — a normal Slack channel bound to one Opportunity, with the record's fields as tabs</td><td>—</td></tr>
+  <tr><td>Polly</td><td>An <b>Agentforce Employee Agent</b>. Configuration in your org: one topic, 9 instructions, 7 actions. No code.</td><td>CRM records, as the person who asked</td></tr>
+  <tr><td>The buddy</td><td>~1,300 lines of Python on a free Railway tier. Socket Mode, so no public URL.</td><td>One Slack List. Nothing in Salesforce.</td></tr>
+</table>
+
+<!-- ─────────────────── RUNG 0 ─────────────────── -->
+<h2><span class="n">§2</span>Rung 0 — the channel becomes the record</h2>
+
+<div class="rung r0">
+  <span class="cost">5 minutes · no code · no Agentforce · no licence</span>
+  <div class="youget">You get: a Slack channel that <i>is</i> a CRM record — 86 live fields, editable in place, with the object badge next to the channel name.</div>
+
+  <p>This is the highest value-per-minute thing in the whole talk, and most people don't know
+  it exists. It ships in every paid Slack workspace, switched off.</p>
+
+<pre>Salesforce Setup  →  search "Slack"  →  Slack Channels for Records
+  → enable it for ONE object (start with Opportunity)
+Then, on any record:  Slack panel  →  Create a channel</pre>
+
+  <div class="bite">
+    <b>It bites here.</b> Every record tab renders <b>empty</b> until someone clicks the sync
+    icon, and each takes 20–30 seconds. If you demo this cold, your audience sees four blank
+    tabs. Open all of them and sync before anyone is watching.
+  </div>
+  <div class="bite">
+    <b>There is no metadata type for it.</b> You cannot deploy it, script it, or package it.
+    A human clicks it in every org, and again after every sandbox refresh. Put it on your
+    post-refresh checklist now.
+  </div>
+  <div class="why">
+    <b>What to notice:</b> the padlocks on the tab columns. Editable fields have none; the ones
+    your profile can't write show a lock. Slack is rendering your field-level security.
+  </div>
+</div>
+
+<!-- ─────────────────── RUNG 1 ─────────────────── -->
+<h2><span class="n">§3</span>Rung 1 — an agent that answers, and asks before it writes</h2>
+
+<div class="rung r1">
+  <span class="cost">an afternoon · configuration only · still no code</span>
+  <div class="youget">You get: an agent in that channel answering from real fields, and refusing to change one without a human yes.</div>
+
+  <h3>The three things an agent is</h3>
+  <ul>
+    <li><b>The agent</b> — configuration in your org. Not an app you install, not a prompt in a box.</li>
+    <li><b>A topic</b> — one job. Its description tells the planner when to pick it.</li>
+    <li><b>Actions</b> — the only verbs it owns. Ours has seven and no more.</li>
+  </ul>
+
+  <h3>The seven actions</h3>
+<pre>Identify Record by Name          Get Record Details
+Query Records                    Extract Fields and Values from User Input
+Update Record            ← isConfirmationRequired = true
+Send Message to a Slack Channel  Reply in Thread</pre>
+
+  <div class="why">
+    <b>The gate is a property, not a prompt.</b> <code>isConfirmationRequired</code> sits on the
+    action. No instruction removes it, and no user phrasing talks past it. That is the difference
+    between a guardrail and a polite request.
+  </div>
+
+  <h3>The instruction that mattered most</h3>
+  <p>The agent kept drafting stage values that don't exist. Nine careful rewrites didn't fix it.
+  Pasting the 29 real values into one instruction did.</p>
+<pre>SELECT MasterLabel FROM OpportunityStage WHERE IsActive = true ORDER BY SortOrder</pre>
+  <p><b>Give agents data, not adjectives.</b> And note: <code>OpportunityStage</code> is a
+  standard queryable object, so the agent could fetch that list itself with an action it already
+  has. Pasting is the cheap fix; querying is the right one. Pick knowingly.</p>
+
+  <div class="bite">
+    <b>Only one agent type reaches Slack.</b> It must be an <b>Employee Agent</b>. A Service Agent
+    won't install, and an Agent Script (<code>.agent</code> / <code>aiAuthoringBundle</code>) agent
+    can't be deployed to Slack at all — those carry <code>agentDSLEnabled = true</code> and Slack
+    only takes the template lane. I lost most of a day to this.
+  </div>
+  <div class="bite">
+    <b>The label must contain the word "Agent."</b> Salesforce's own docs say so in passing.
+    Get it wrong and the agent is silently invisible in Slack's review queue.
+  </div>
+  <div class="bite">
+    <b>Test your own org early.</b> In my sandbox a brand-new agent never reached Slack's review
+    queue at all — only agents whose Slack registration came over in the clone from production
+    would install. I could not find that documented anywhere. Don't assume it works until you
+    have installed one.
+  </div>
+</div>
+
+<!-- ─────────────────── RUNG 2 ─────────────────── -->
+<h2><span class="n">§4</span>Rung 2 — your own worker, in code</h2>
+
+<div class="rung r2">
+  <span class="cost">a weekend · Python · free Railway tier</span>
+  <div class="youget">You get: a digital worker you own, that answers, chases on a clock, escalates with real buttons, and reports.</div>
+
+<pre>git clone https://github.com/shivanathd/onboarding-buddy
+cd onboarding-buddy
+# README has a 15-minute quickstart: create the app from manifest.json,
+# invite it to one channel, seed a List, put it on shift.</pre>
+
+  <p>MIT licensed, ~1,300 lines, three pip dependencies, no database. State lives in a
+  <b>Slack List</b> — a spreadsheet inside Slack that you and the worker can both read. That
+  choice is most of why it's small.</p>
+
+  <table>
+    <tr><th>Job</th><th>Trigger</th><th>What it does</th></tr>
+    <tr><td>Answer</td><td>an @mention</td><td>replies in-thread, grounded in the List</td></tr>
+    <tr><td>Advance</td><td>a ✅ reaction</td><td>flips the row to Done</td></tr>
+    <tr><td>Chase</td><td>a clock it owns</td><td>nudges overdue steps, escalates with buttons</td></tr>
+    <tr><td>Report</td><td>a mention or a cron</td><td>one Block Kit cohort card</td></tr>
+  </table>
+
+  <div class="why">
+    <b>Socket Mode is why this is easy.</b> The worker dials out to Slack. No public URL, no
+    ingress, no TLS to manage. It runs the same on your laptop and on a hosted tier.
+  </div>
+  <div class="bite">
+    <b>Socket Mode does not replay missed events.</b> If the process is restarting when a mention
+    arrives, that mention is gone — no error, no retry, no log. Every deploy is a small hole in
+    your coverage. Don't deploy during a demo.
+  </div>
+  <div class="bite">
+    <b>A List created by an app is shared with nobody.</b> Not even you. Call
+    <code>slackLists.access.set</code> with <code>access_level</code> to grant it, and note there
+    is <b>no getter</b> — verify via <code>files.info</code> and read the <code>channels</code>
+    field. I shipped a button that gave everyone "access denied" because of this.
+  </div>
+</div>
+
+<!-- ─────────────────── RUNG 3 ─────────────────── -->
+<h2><span class="n">§5</span>Rung 3 — two agents, one channel</h2>
+
+<div class="rung r3">
+  <span class="cost">an hour, once rungs 1 and 2 are standing</span>
+  <div class="youget">You get: an Agentforce agent handing work to your worker, and a very instructive failure when you try it the other way.</div>
+
+  <h3>Agentforce → your worker: works</h3>
+  <p>Give the agent a <b>Send Message to a Slack Channel</b> action, and put your worker's Slack
+  handle in the instruction so the agent writes the mention itself:</p>
+<pre>…end by mentioning the onboarding worker using exactly this handle,
+character for character: &lt;@YOUR_WORKER_USER_ID&gt;</pre>
+
+  <div class="bite">
+    <b>Don't let the human type that handle.</b> If your instruction to the agent names the worker,
+    the worker wakes on <i>your</i> message — before the agent has done anything — and answers a
+    question nobody asked. Put the handle in the agent's config, not in the human's sentence.
+  </div>
+  <div class="bite">
+    <b>A conversational reply is invisible to other bots.</b> Agentforce replies in Slack are
+    <b>ephemeral to whoever asked</b>; the channel sees only "I've privately shared an answer with
+    @you." Only the explicit <i>Send Message</i> action produces a real message another bot can
+    hear. Say "post to this channel" in your ask, or nothing fires.
+  </div>
+  <div class="bite">
+    <b><code>app_mention</code> is intermittent for bot-authored mentions.</b> Once it didn't fire
+    at all; next time both it and the <code>message</code> listener fired, producing two replies
+    0.6 s apart. Listen on both and dedupe on <code>(channel, event ts)</code>. Don't "fix" it by
+    deleting a listener.
+  </div>
+
+  <h3>Your worker → Agentforce: fails, and this is the lesson</h3>
+  <p>Have the worker tag the agent and ask for a stage change. The agent wakes in about 20 seconds
+  and says:</p>
+<pre>"Please reach out to your Slack Administrator to get access."</pre>
+  <p>Agentforce in Slack binds every session to the <b>invoking user's Salesforce identity</b>.
+  A bot has no Slack-to-Salesforce user mapping, so there is no session to open. Two agents can
+  reach each other through the channel and still cannot move a CRM record between them.</p>
+
+  <h3>You can fix it. Here is the bill.</h3>
+  <table>
+    <tr><th>Route</th><th>How</th><th>What it costs</th></tr>
+    <tr><td>Client credentials</td><td>External Client App, a Run As user with API Only, Agent API with <code>bypassUser: true</code></td><td>Every write becomes <b>one service account</b>. No user attribution, ever.</td></tr>
+    <tr><td>JWT, named user</td><td>Private key, "issue JWT-based access tokens for named users", <code>bypassUser: false</code></td><td>Real attribution — and you now hold a key that can <b>act as any human</b> in the org.</td></tr>
+    <tr><td>Keep the human</td><td>One extra message</td><td>One extra message.</td></tr>
+  </table>
+  <p>And before either: <b>an Employee Agent cannot be called by the Agent API at all.</b> You'd
+  rebuild it as a Service Agent — which is assigned its own Einstein Agent user. Both routes begin
+  by giving the agent an identity.</p>
+  <div class="why">
+    The Agent API parameter that chooses between these is literally called
+    <code>bypassUser</code>. Salesforce named it honestly. Read that name before you set it.
+  </div>
+</div>
+
+<!-- ─────────────────── MAKE IT YOURS ─────────────────── -->
+<h2><span class="n">§6</span>Make it yours</h2>
+<p class="lede">The demo is a staffing deal. Almost none of that is load-bearing. Here is what to swap.</p>
+
+<table>
+  <tr><th>Swap</th><th>Where</th><th>Notes</th></tr>
+  <tr><td>The object</td><td>Setup → Slack Channels for Records</td><td>Any object. Case, Job, Project, Order. The tabs come free.</td></tr>
+  <tr><td>The process</td><td><code>seed/onboarding.csv</code></td><td>The List is one row per step. Rename the columns and the worker follows — every Lists call goes through one adapter, <code>tools/lists.py</code>.</td></tr>
+  <tr><td>The agent's job</td><td>the topic's instructions</td><td>Nine plain-English rules. Start by pasting <i>your</i> picklist values in.</td></tr>
+  <tr><td>The verbs</td><td>the action list</td><td>Ten per subagent is the cap. Add nothing you would not want it to do unattended.</td></tr>
+  <tr><td>The model</td><td><code>ANTHROPIC_MODEL</code></td><td><code>agent.py</code> is 42 lines precisely so the provider is swappable.</td></tr>
+  <tr><td>The clock</td><td><code>CHASE_CRON_HOUR</code>, <code>TZ</code></td><td>A container runs UTC unless you set <code>TZ</code>. This has caught me.</td></tr>
+  <tr><td>Who it can wake</td><td><code>HANDOFF_BOT_IDS</code></td><td>Allow-list the agents that may hand it work. Empty means any bot.</td></tr>
+  <tr><td>Who it hands to</td><td><code>AGENTFORCE_USER_ID</code></td><td>Unset and it just states its limits. Set and it names the agent that can act.</td></tr>
+</table>
+
+<div class="why">
+<b>The one design decision worth stealing:</b> the worker owns a Slack List and never writes to
+Salesforce; the agent owns Salesforce and never writes to the List. Neither can corrupt the
+other's system, and every number on screen is countable by eye. That split cost nothing and
+removed a whole class of bug.
+</div>
+
+<!-- ─────────────────── DEAD ENDS ─────────────────── -->
+<h2><span class="n">§7</span>Dead ends — the week you don't have to repeat</h2>
+
+<div class="dead">
+  <h4>Building the agent in Agent Script</h4>
+  <p>Slack-deployable agents carry <code>agentTemplate = Slack__SlackEmployeeHelp</code> and
+  <code>agentDSLEnabled = false</code>. <b>An Agent Script agent cannot be deployed to Slack.</b>
+  I built one, tested it to 33/33, and it could never appear. Use the template lane for anything
+  Slack-facing.</p>
+</div>
+
+<div class="dead">
+  <h4>A local action without schemas</h4>
+  <p>A <code>localAction</code> missing <code>input/schema.json</code> and
+  <code>output/schema.json</code> <b>deploys and activates cleanly, and then silently cannot
+  resolve.</b> Nothing warns you. Only a metadata <i>retrieve</i> reveals it.</p>
+</div>
+
+<div class="dead">
+  <h4>A bridge bot to give the worker an identity</h4>
+  <p>We designed one, and rejected it. It would have made the demo smoother and the claim false.
+  A guardrail you configure can be reconfigured; a credential that was never issued cannot be
+  misused.</p>
+</div>
+
+<div class="dead">
+  <h4>Trusting the admin panels</h4>
+  <p>Slack's admin console showed <b>0 active agents</b> while the agent was answering in a
+  channel. Salesforce showed <b>Connections: Needs Setup</b> at the same time. Both were wrong.
+  <b>Behaviour is truth; panels are decoration.</b></p>
+</div>
+
+<div class="dead">
+  <h4>Trusting a quiet log, or a green deploy</h4>
+  <p>A green deploy means your deploy passed. It does not mean the thing works. Retrieve the
+  bundle and read what the org actually stored — twice this session that is the only thing that
+  found the bug.</p>
+</div>
+
+<!-- ─────────────────── WHERE IT LIVES ─────────────────── -->
+<h2><span class="n">§8</span>Where everything lives</h2>
+<table>
+  <tr><td>The worker</td><td><a href="https://github.com/shivanathd/onboarding-buddy">github.com/shivanathd/onboarding-buddy</a> — MIT, public, deploys on a free tier</td></tr>
+  <tr><td>The pack</td><td><a href="https://shivd.me/ug">shivd.me/ug</a> — all five sessions: decks, recordings, and the build log with every dead end left in</td></tr>
+  <tr><td>Ask me</td><td>The UG channel. The series ends; the channel doesn't.</td></tr>
+</table>
+
+<h3>If you do one thing</h3>
+<p><b>Flip Slack Channels for Records for one object, bind one channel, and live with it for a
+week.</b> It costs five minutes, needs no licence, no agent and no code — and it is the change
+that made everything else in this talk possible.</p>
+
+<footer>
+Every command, config value and failure in this handout was run or observed between 30 August
+and 2 September 2026. Where something is unverified I have said so. If you find something here
+that is wrong, tell me in the channel and I will fix it — that is what the build log is for.
+</footer>
+
+</div></body>
+</html>

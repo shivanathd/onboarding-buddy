@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>S5 run of show · Connect the fleet</title>
+<style>
+  :root{
+    --ink:#10121a; --mid:#5b6376; --line:#e3e6ee; --bg:#fbfbfd;
+    --deck:#5b5bd6; --slack:#0f9d58; --warn:#c2410c; --deckbg:#f2f2fd; --slackbg:#eefaf2;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.55 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:28px 24px 80px}
+
+  header.top{border-bottom:2px solid var(--ink);padding-bottom:16px;margin-bottom:8px}
+  header.top h1{font-size:30px;margin:0 0 4px;letter-spacing:-.02em}
+  header.top .sub{color:var(--mid);font-size:15px}
+  .when{margin-top:10px;font-size:14px;color:var(--mid)}
+  .when b{color:var(--ink)}
+
+  /* the two rules, always visible */
+  .rules{
+    position:sticky; top:0; z-index:20; background:#fff8ed; border:1px solid #f0c99a;
+    border-radius:10px; padding:12px 16px; margin:18px 0 26px; font-size:14.5px;
+  }
+  .rules b{color:var(--warn)}
+  .rules div+div{margin-top:6px}
+
+  /* blocks */
+  .block{margin:34px 0 0}
+  .blockhead{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .chip{
+    font-size:11px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;
+    padding:5px 11px;border-radius:999px;color:#fff;white-space:nowrap;
+  }
+  .chip.deck{background:var(--deck)} .chip.slack{background:var(--slack)}
+  .blockhead h2{font-size:21px;margin:0;letter-spacing:-.01em}
+  .blockhead .mins{margin-left:auto;color:var(--mid);font-size:14px;font-variant-numeric:tabular-nums}
+
+  .card{border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}
+  .card.deck{border-left:4px solid var(--deck)}
+  .card.slack{border-left:4px solid var(--slack)}
+
+  table{width:100%;border-collapse:collapse}
+  td{padding:11px 16px;border-top:1px solid var(--line);vertical-align:top}
+  tr:first-child td{border-top:none}
+  td.s{width:64px;font-weight:700;color:var(--deck);font-variant-numeric:tabular-nums;white-space:nowrap}
+  td.p{width:38%;font-weight:600}
+  td.say{color:var(--mid)}
+  tr.dim td{background:#fafafc;color:var(--mid)}
+  tr.dim td.s{color:var(--mid)}
+
+  .body{padding:16px}
+  .lab{
+    font-size:11px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;
+    color:var(--mid);display:block;margin-bottom:7px;
+  }
+  .lab.type{color:var(--slack)}
+
+  /* copyable line */
+  .type{
+    position:relative;background:#12141c;color:#eef0f6;border-radius:9px;
+    padding:15px 92px 15px 17px;margin:8px 0 4px;
+    font:15px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
+    white-space:pre-wrap;word-break:break-word;cursor:pointer;
+  }
+  .type:hover{background:#191c26}
+  .type .cp{
+    position:absolute;top:11px;right:11px;background:#2b2f3d;color:#c9cee0;
+    border:none;border-radius:6px;padding:6px 11px;font-size:11.5px;font-weight:600;
+    letter-spacing:.05em;text-transform:uppercase;cursor:pointer;
+  }
+  .type.done .cp{background:var(--slack);color:#fff}
+
+  ol.pt{margin:8px 0 0;padding-left:22px}
+  ol.pt li{margin:5px 0}
+  ol.pt b{background:#fff3bf;padding:0 3px;border-radius:3px}
+
+  .note{
+    background:var(--slackbg);border-left:3px solid var(--slack);
+    padding:11px 14px;border-radius:0 8px 8px 0;margin:12px 0 0;font-size:14.5px;
+  }
+  .note.warn{background:#fff5f0;border-left-color:var(--warn)}
+  .note b{color:var(--warn)}
+
+  .fb{font-size:13px;color:var(--mid);margin-top:12px;padding-top:11px;border-top:1px dashed var(--line)}
+  .fb b{color:var(--ink)}
+
+  .switch{
+    text-align:center;margin:22px 0;font-size:13px;font-weight:700;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--mid);
+  }
+  .switch span{background:var(--bg);padding:0 14px}
+  .switch{background:linear-gradient(var(--line),var(--line)) center/100% 1px no-repeat}
+
+  h3.mini{font-size:15px;margin:18px 0 6px;letter-spacing:-.01em}
+  .pre{
+    background:#12141c;color:#eef0f6;border-radius:9px;padding:14px 16px;margin:8px 0;
+    font:13.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre;overflow-x:auto;
+  }
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+
+  footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--mid);font-size:13px}
+
+  @media print{
+    .rules{position:static}
+    body{background:#fff}
+    .block{break-inside:avoid}
+    .type{background:#f4f4f8;color:#111;border:1px solid #ccc}
+    .type .cp{display:none}
+    .pre{background:#f4f4f8;color:#111}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>Connect the fleet — run of show</h1>
+  <div class="sub">Session 5 of 5 · Slack UG Hyderabad · slide numbers are the 40-slide deck v5 (5 hidden fallbacks)</div>
+  <div class="when">
+    <b>Wednesday 2 September 2026 · 16:00 IST / 14:30 Dubai / 10:30 UTC</b> ·
+    five switches out to Slack, five back · 25 min of the hour is live
+  </div>
+</header>
+
+<div class="rules">
+  <div><b>Read every WATCH FOR panel before you switch, never during.</b>
+    The shared screen is the visual channel and your voice is the audio channel. There is no room for a third.</div>
+  <div><b>When an answer lands, stop talking for three seconds.</b>
+    Let them read it, then say what it proves.</div>
+  <div><b>Do not deploy anything today.</b>
+    Socket Mode does not queue events for a disconnected app, so a redeploy mid-demo eats a mention with no error and no reply.</div>
+</div>
+
+<!-- ─────────────────────────── PREFLIGHT ─────────────────────────── -->
+<div class="block">
+  <div class="blockhead">
+    <span class="chip" style="background:#10121a">T-30</span>
+    <h2>Before anyone joins</h2>
+  </div>
+  <div class="card">
+    <div class="body">
+      <span class="lab">Run</span>
+      <div class="pre">bash <pack>/s5-preflight.sh        # expect 29 passed, 0 failed</div>
+
+      <span class="lab" style="margin-top:14px">Then, by hand</span>
+      <ol class="pt">
+        <li><b>Open all four record tabs and click the sync icon on each.</b>
+            They render empty until you do, and it takes 20&ndash;30 s per tab. This is the most
+            demo-dangerous thing in the whole hour.</li>
+        <li>Log in to Salesforce and leave the tab open. The session lapsed once during rehearsal.</li>
+        <li>Open Railway &rarr; <code>onboarding-buddy</code> &rarr; <code>worker</code> &rarr; Logs, font large.</li>
+        <li>Check the channel: seed message only, plus the 09:00 cron output.</li>
+      </ol>
+
+      <div class="note">
+        The <b>09:00 Dubai cron</b> fires ~5.5 hours before you present and leaves <b>three escalations and two nudges</b> in the channel. That is deliberate scene-setting, not mess. Do not clear it.
+      </div>
+
+      <h3 class="mini">The mention trap</h3>
+      <p style="margin:4px 0 0">
+        A pasted <code>@Polly PeopleOps</code> is plain text and the agent will never fire. Every
+        line below needs a real blue mention pill:
+      </p>
+      <ol class="pt">
+        <li>Type <code>@pol</code> &rarr; pick <b>Polly PeopleOps</b> &rarr; Tab</li>
+        <li>Then paste the rest of the line</li>
+        <li>Check the composer before Enter: the handle must be a blue chip, not grey text</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────────── BLOCK 1 ─────────────────────────── -->
+<div class="block">
+  <div class="blockhead">
+    <span class="chip deck">Deck</span>
+    <h2>Slides 1 &ndash; 7 · open</h2>
+    <span class="mins">~9 min</span>
+  </div>
+  <div class="card deck">
+    <table>
+      <tr><td class="s">1</td><td class="p">Title</td><td class="say">&mdash;</td></tr>
+      <tr><td class="s">2</td><td class="p">The three links</td><td class="say">"Everything tonight is live. If it breaks, you watch me fix it."</td></tr>
+      <tr><td class="s">3</td><td class="p">You</td><td class="say">Keep it short. They came back four times already.</td></tr>
+      <tr><td class="s">4</td><td class="p">The stack, bottom up</td><td class="say">"Each layer sits on the one below it."</td></tr>
+      <tr><td class="s">5</td><td class="p">Opportunity &rarr; Job &rarr; Placement</td><td class="say">The staffing scenario. Name the two Priyas before anyone notices them.</td></tr>
+      <tr><td class="s">6</td><td class="p">Three objects and one list</td><td class="say"><b>New.</b> API names, the two lookups, and the dashed line: three Salesforce objects above it, one Slack List below. "I added zero objects." Set up <code>Openings_Filled__c</code> here — slide 28 pays it off.</td></tr>
+      <tr><td class="s">7</td><td class="p">The five acts + STAGE RULES</td><td class="say"><b>Read the three stage rules aloud.</b> They pre-explain the sync trap, "post to this channel", and naming the buddy, so you never have to stop mid-demo to explain them.</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="switch"><span>switch to Slack</span></div>
+
+<!-- ─────────────────────────── ACT 1 ─────────────────────────── -->
+<div class="block">
+  <div class="blockhead">
+    <span class="chip slack">Act 1 · the record</span>
+    <h2>Nothing typed</h2>
+    <span class="mins">4 min</span>
+  </div>
+  <div class="card slack">
+    <div class="body">
+      <span class="lab">First — slide 8, then switch</span>
+      <p style="margin:0">Read the WATCH FOR panel while the deck is still up.</p>
+
+      <span class="lab" style="margin-top:16px">Point at, in this order</span>
+      <ol class="pt">
+        <li>The <b>Opportunity badge</b> next to the channel name &mdash; "this channel knows what it is"</li>
+        <li>The <b>tab strip</b> &mdash; Details, Contact Roles, Field History, Comments</li>
+        <li>Open <b>Details</b> &mdash; "86 live fields, not a link to a record"</li>
+        <li>Open <b>Contact Roles</b> and point at the <b>padlocks</b>: Title, Phone and Email are locked, <b>Role and Primary are not</b> &mdash; "Slack knows which fields I am allowed to write"</li>
+        <li>Flip <b>David Mensah</b>&rsquo;s Role to <b>Evaluator</b> &mdash; "that just wrote to the CRM." Then say: <i>hold that thought, in a few minutes an agent will try the same thing</i></li>
+      </ol>
+      <div class="note">Closing line: <b>one checkbox moved the CRM into the conversation.</b></div>
+      <div class="note warn"><b>Do not say the record tabs are Slack Lists.</b> Tested 2 Sep: <code>files.list</code> on this channel returns exactly one list file, the buddy&rsquo;s &ldquo;Onboarding cohort&rdquo;. The tabs are the Salesforce app rendering its own table. The claim came from the sync tooltip saying &ldquo;Sync list&rdquo; and it is wrong. Slide 8&rsquo;s fourth WATCH FOR bullet needs deleting.</div>
+      <div class="fb"><b>If it breaks:</b> jump to hidden slide <b>9</b>.</div>
+    </div>
+  </div>
+</div>
+
+<div class="switch"><span>back to deck</span></div>
+
+<div class="block">
+  <div class="card deck">
+    <table>
+      <tr><td class="s">10</td><td class="p">"One checkbox moves the CRM into the conversation."</td><td class="say">Full-bleed statement card. Land it, pause, move on. This is the re-entry beat after the screen share — do not rush it.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ─────────────────────────── BLOCK 2 ─────────────────────────── -->
+<div class="block">
+  <div class="blockhead">
+    <span class="chip deck">Deck</span>
+    <h2>Slides 11 &ndash; 16</h2>
+    <span class="mins">~8 min</span>
+  </div>
+  <div class="card deck">
+    <table>
+      <tr><td class="s">11</td><td class="p">Hidden behind one checkbox</td><td class="say">Off by default, per object, no metadata type. "Go flip it tomorrow morning."</td></tr>
+      <tr><td class="s">12</td><td class="p">The cast</td><td class="say">One configured, one written. "Only one of them touches the CRM. Watch which one, and as whom."</td></tr>
+      <tr><td class="s">13</td><td class="p">What I changed in the worker</td><td class="say"><b>New.</b> Twelve commits in five days. Speaks directly to everyone who was here last week. <b>Careful:</b> only <i>waking for other bots</i> is why tonight works. The MCP door is deployed but nothing on stage opens it &mdash; say so.</td></tr>
+      <tr><td class="s">14</td><td class="p">How the pieces connect</td><td class="say">Three runtimes, one channel. "Nobody polls anybody."</td></tr>
+      <tr><td class="s">15</td><td class="p">Three ways to put an agent in Slack</td><td class="say"><b>New, and it is the title of the talk.</b> Claude + MCP · your bot + MCP · Agentforce. Land the payoff: "pick by who needs to be accountable for the write." <b>Do not say Claude can call the buddy</b> &mdash; its /mcp door verifies a Slack signature, so only Slack may knock. That is the better point: an MCP server brings its own auth model.</td></tr>
+      <tr class="dim"><td class="s">16</td><td class="p">The four windows</td><td class="say">Cut candidate. Slide 15 and the act cards already do this job.</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="switch"><span>slide 17, then switch to Slack</span></div>
+
+<!-- ─────────────────────────── ACT 2 ─────────────────────────── -->
+<div class="block">
+  <div class="blockhead">
+    <span class="chip slack">Act 2 · the answer</span>
+    <h2>Two lines</h2>
+    <span class="mins">5 min</span>
+  </div>
+  <div class="card slack">
+    <div class="body">
+
+      <span class="lab type">Type 2a — mention Polly first</span>
+      <div class="type"><button class="cp">copy</button>post a summary of the Meridian deal to this channel: stage, amount, close date and owner.</div>
+      <ol class="pt">
+        <li>Point at each value as it lands: <b>Proposal/Price Quote</b> · <b>USD 96,000</b> · <b>9/30/2026</b> · <b>Priya Nair</b></li>
+        <li>"Those are fields. Not vibes."</li>
+      </ol>
+
+      <span class="lab type" style="margin-top:20px">Type 2b — the recruiting join</span>
+      <div class="type"><button class="cp">copy</button>post to this channel how many consultants the Meridian deal is for and who is placed. List only, do not hand off and do not tag anyone.</div>
+      <ol class="pt">
+        <li>Point at the four names: Tom Whelan, Priya Raman, Sara Okonkwo, Rahul Menon</li>
+        <li>"<b>Opportunity to Job to Placement.</b> Two hops. There is no shortcut field, so she had to walk both."</li>
+      </ol>
+
+      <div class="note warn">
+        <b>That trailing sentence is not optional.</b> Without "List only, do not hand off and do not
+        tag anyone", Polly ends her answer by tagging <i>herself</i> and asking herself to pick it up.
+        Both versions are in yesterday's channel history. The guarded one is clean.
+      </div>
+      <div class="note">
+        Say the <b>"post to this channel"</b> point here: an agent's ordinary reply is private to
+        whoever asked, and the room would see nothing but a stub.
+      </div>
+      <div class="fb"><b>If it breaks:</b> hidden slide <b>18</b>.</div>
+    </div>
+  </div>
+</div>
+
+<div class="switch"><span>back to deck</span></div>
+
+<div class="block">
+  <div class="card deck">
+    <table>
+      <tr><td class="s">19</td><td class="p">"Four real names. Two hops, no shortcut field."</td><td class="say">Full-bleed statement card. Land it, pause, move on. This is the re-entry beat after the screen share &mdash; do not rush it.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ─────────────────────────── BLOCK 3 ─────────────────────────── -->
+<div class="block">
+  <div class="blockhead">
+    <span class="chip deck">Deck</span>
+    <h2>Slides 20 &ndash; 22</h2>
+    <span class="mins">~5 min</span>
+  </div>
+  <div class="card deck">
+    <table>
+      <tr><td class="s">20</td><td class="p">Who Polly really is</td><td class="say">The honesty beat, and it lands here because they just watched her work. Someone else's name is in Last Modified By.</td></tr>
+      <tr><td class="s">21</td><td class="p">The agent runs as you</td><td class="say">Lead with "you won't see this live", then the Priya Nair / Amount contrast from Setup.</td></tr>
+      <tr><td class="s">22</td><td class="p">Seven actions, nothing else</td><td class="say"><b>This sets up Act 3.</b> Land "no delete on the list means no delete, whatever the prompt says" before you switch.</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="switch"><span>slide 23, then switch to Slack</span></div>
+
+<!-- ─────────────────────────── ACT 3 ─────────────────────────── -->
+<div class="block">
+  <div class="blockhead">
+    <span class="chip slack">Act 3 · the gate</span>
+    <h2>One line, one click, then the trap</h2>
+    <span class="mins">6 min</span>
+  </div>
+  <div class="card slack">
+    <div class="body">
+
+      <div class="note"><b>VERIFIED 2 Sep 05:19, after the instruction_6 fix.</b> One ask, no
+        announcement, and <b>only the question is private &mdash; the write confirmation posts to the
+        channel by itself</b>. That is one Share in Thread click, not three.</div>
+
+      <span class="lab type">Type 3a &mdash; mention Polly</span>
+      <div class="type"><button class="cp">copy</button>move Meridian to Negotiation/Review</div>
+
+      <span class="lab" style="margin-top:16px">The sequence, and what to say</span>
+      <ol class="pt">
+        <li>She asks <b>once</b>, naming record, field and value: <i>&ldquo;Do you want me to update the
+            stage of &lsquo;Meridian Systems - Platform Expansion FY27&rsquo; to &lsquo;Negotiation/Review&rsquo;?&rdquo;</i>
+            &mdash; <b>only you can see this</b>; the room sees &ldquo;I&rsquo;ve privately shared an
+            answer with @you&rdquo;<br>
+            Say: <i>&ldquo;She has told me exactly what she is about to change, and stopped. And she told
+            only me. Her draft belongs to the person who asked. I have to choose to show you.&rdquo;</i></li>
+        <li>Click <b>Share in Thread</b> &mdash; the only one you need</li>
+        <li>Reply <code>Yes please</code></li>
+        <li>The write lands and <b>her confirmation posts to the channel on its own</b>. Nothing to share.<br>
+            Say: <i>&ldquo;The question was private. The write is public. That is the right way round.&rdquo;</i></li>
+      </ol>
+
+      <span class="lab type" style="margin-top:20px">Type 3b &mdash; the trap</span>
+      <div class="type"><button class="cp">copy</button>move Meridian to Handshake Pending.</div>
+      <ol class="pt">
+        <li>Point at the refusal and the list of valid stages</li>
+        <li>&ldquo;<b>Zero actions ran.</b> It did not try and fail. It declined.&rdquo;</li>
+      </ol>
+
+      <div class="note"><b>Sets up Act 4:</b> <i>&ldquo;Notice she asks in words. In two acts the worker
+        I wrote puts real buttons in this channel. That difference is the price of configuration versus
+        code.&rdquo;</i></div>
+      <div class="fb"><b>If it breaks:</b> hidden slide <b>24</b>.</div>
+    </div>
+  </div>
+</div>
+
+<div class="switch"><span>back to deck</span></div>
+
+<div class="block">
+  <div class="card deck">
+    <table>
+      <tr><td class="s">25</td><td class="p">"A draft, a record card, a human yes. In that order."</td><td class="say">Full-bleed statement card. Land it, pause, move on. This is the re-entry beat after the screen share &mdash; do not rush it.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ─────────────────────────── BLOCK 4 ─────────────────────────── -->
+<div class="block">
+  <div class="blockhead">
+    <span class="chip deck">Deck</span>
+    <h2>Slides 26 &ndash; 28</h2>
+    <span class="mins">~5 min</span>
+  </div>
+  <div class="card deck">
+    <table>
+      <tr><td class="s">26</td><td class="p">The line of the hour</td><td class="say">Your best slide. 29 / 0 / 36-36. Say <b>"give agents data, not adjectives"</b> and then stop talking for a beat.</td></tr>
+      <tr><td class="s">27</td><td class="p">"29"</td><td class="say">Full-bleed number: <b>29 stage values I pasted in, after 9 instructions failed.</b> Your strongest number, finally at full size.</td></tr>
+      <tr><td class="s">28</td><td class="p">I tested Polly before the room did</td><td class="say">Twelve questions from the command line. "My tests were wrong before Polly was." Cut candidate if you are over.</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="switch"><span>slide 29, then switch to Slack</span></div>
+
+<!-- ─────────────────────────── ACT 4 ─────────────────────────── -->
+<div class="block">
+  <div class="blockhead">
+    <span class="chip slack">Act 4 · the handoff</span>
+    <h2>One line, two bots</h2>
+    <span class="mins">6 min</span>
+  </div>
+  <div class="card slack">
+    <div class="body">
+
+      <span class="lab type">Type — both handles need to be real pills</span>
+      <div class="note warn"><b>Start a FRESH thread for this act.</b> The worker&rsquo;s handoff counter (<code>_handoffs</code>, capped at 2 turns) is keyed on the thread and is never reset. Re-running Act 4 in a thread that already spent its turns posts nothing at all.</div>
+      <div class="type"><button class="cp">copy</button>post the Meridian placement roster to this channel and hand it to the onboarding worker.</div>
+
+      <span class="lab" style="margin-top:16px">Point at, in this order</span>
+      <ol class="pt">
+        <li><b>You never typed the buddy's name.</b> Say so: <i>"I am not telling her who to call. She knows."</i></li>
+        <li>Polly's post is a <b>real channel message</b>, not a private reply &mdash; point at
+            <b>"Action triggered by @you"</b></li>
+        <li>The <b>@onboarding-buddy mention inside it</b> &mdash; "that is the only thing the worker hears"</li>
+        <li>The buddy's reply &mdash; "<b>different runtime, different codebase, woke on a message</b>"</li>
+        <li><b>One reply, not two.</b> The dedupe earns its keep.</li>
+      </ol>
+
+      <div class="note">
+        Optional, if you want the full report card. Mention <code>@onboarding-buddy</code> first:
+        <div class="type" style="margin-top:8px"><button class="cp">copy</button>run report</div>
+        Verified working. Expect 12 open, 6 overdue, and By person naming all four consultants.
+      </div>
+      <div class="note"><b>VERIFIED 2 Sep 04:19.</b> Polly posted the roster as a real channel message carrying <code>@onboarding-buddy</code> that she wrote herself, and the worker replied once with 6 overdue steps named, "Grounded in 12 steps from the List". You typed no handle.</div>
+      <div class="note warn"><b>Session memory quirk.</b> If you have already run this act in the same Polly session, she may answer "the roster has already been posted". Say <code>do it again</code> and she reposts. A fresh session on the day will not do this.</div>
+      <div class="note">Closing line: <b>the two bots share nothing but the channel.</b></div>
+      <div class="fb"><b>If it breaks:</b> hidden slide <b>30</b>.</div>
+    </div>
+  </div>
+</div>
+
+<div class="switch"><span>back to deck</span></div>
+
+<div class="block">
+  <div class="card deck">
+    <table>
+      <tr><td class="s">31</td><td class="p">"Two runtimes. One channel. Nothing else shared."</td><td class="say">Full-bleed statement card. Land it, pause, move on. This is the re-entry beat after the screen share &mdash; do not rush it.</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="switch"><span>slide 32 · ~2 min</span></div>
+
+<div class="block">
+  <div class="card deck">
+    <table>
+      <tr><td class="s">32</td><td class="p">Why the handoff needs a real message</td><td class="say">Private by default, the explicit action, one reply not two. Close with "name the buddy in the ask, or Polly tags herself and nothing wakes."</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="switch"><span>slide 33, then switch to Slack</span></div>
+
+<!-- ─────────────────────────── ACT 5 ─────────────────────────── -->
+<div class="block">
+  <div class="blockhead">
+    <span class="chip slack">Act 5 · the close</span>
+    <h2>A human closes the deal</h2>
+    <span class="mins">4 min</span>
+  </div>
+  <div class="card slack">
+    <div class="body">
+
+      <div class="note warn"><b>Rewritten 2 Sep 04:30, tested twice.</b> The buddy will NOT say
+        onboarding is done &mdash; it says <i>"6 of 12 onboarding steps are still open"</i>, which is
+        true, because Act 4 needs a List with overdue work. The old premise was false. What follows
+        is better.</div>
+
+      <span class="lab type">Type &mdash; ask the buddy, not Polly</span>
+      <div class="type"><button class="cp">copy</button>onboarding is done, move Meridian to Closed Won.</div>
+      <p style="margin:6px 0 0">Mention <code>@onboarding-buddy</code>, not Polly.</p>
+
+      <span class="lab" style="margin-top:16px">What happens, and what to say</span>
+      <ol class="pt">
+        <li>The buddy <b>corrects you from the List</b> &mdash; six steps still open, the deal is at
+            Proposal/Price Quote, not ready to close &mdash; and then <b>tags Polly itself</b><br>
+            Say: <i>"I asked the worker. It read its List, told me I was wrong, and then went and
+            asked the only thing here that can actually do it."</i></li>
+        <li><b>Polly wakes and refuses:</b> <i>"Please reach out to your Slack Administrator to get
+            access."</i><br>
+            Say: <i>"Two agents just tried to close a deal between themselves, in front of you. It
+            didn't fail because I blocked it. It failed because one of them has no identity in
+            Salesforce &mdash; and Salesforce said so."</i></li>
+        <li>Show the fix slide: ECA + client credentials, or a JWT for a named user. <b>The parameter
+            is called <code>bypassUser</code>.</b> Say: <i>"I looked at the price and I didn't pay it."</i></li>
+        <li>Close it yourself &mdash; mention <b>Polly</b>:
+            <div class="type"><button class="cp">copy</button>the onboarding cohort is placed and running. Move Meridian to Closed Won.</div>
+            Same gate as Act 3: her question, your typed <code>yes</code>, one <b>Share in Thread</b></li>
+        <li>Open <b>Field History</b> and <b>own it</b>. There are <b>52 rows, 14 of them Stage</b>, and the top eight are last night&rsquo;s rehearsal, including two Closed Won round-trips. Do not hide that:<br><i>&ldquo;Most of these are me, last night, rehearsing this exact demo. Moving it forward, moving it back, twice. That is what a build log looks like. Now look at the User column. Fourteen writes on this record and not one of them was made by an agent.&rdquo;</i></li>
+      </ol>
+      <div class="note">Budget <b>5 minutes</b>, not 4. There is one more turn than the deck assumed.</div>
+      <div class="fb"><b>If it breaks:</b> hidden slide <b>34</b>.</div>
+    </div>
+  </div>
+</div>
+
+<div class="switch"><span>back to deck, and stay there</span></div>
+
+<div class="block">
+  <div class="card deck">
+    <table>
+      <tr><td class="s">35</td><td class="p">"Field History names a person, never an agent."</td><td class="say">Full-bleed statement card. Land it, pause, move on. This is the re-entry beat after the screen share &mdash; do not rush it.</td></tr>
+    </table>
+  </div>
+</div>
+
+
+
+<!-- ─────────────────────────── BLOCK 5 ─────────────────────────── -->
+<div class="block">
+  <div class="blockhead">
+    <span class="chip deck">Deck</span>
+    <h2>Slides 36 &ndash; 40 · the close</h2>
+    <span class="mins">~7 min</span>
+  </div>
+  <div class="card deck">
+    <table>
+      <tr><td class="s">36</td><td class="p">What you just watched</td><td class="say">The five-act recap grid. Walk it fast.</td></tr>
+      <tr><td class="s">37</td><td class="p">"Not one write without a human."</td><td class="say">The thesis, full bleed. Say it, then let slide 38 explain <i>why</i> it is structurally true.</td></tr>
+      <tr><td class="s">38</td><td class="p">Polly has no identity of her own &mdash; by design, and by type</td><td class="say"><b>The current headline "A bot has no Salesforce identity" is false. Verified in s5demo: the Einstein Agent licence shows 802 total, <b>11 used</b>. Eleven agent users already exist in this org.</b><br><br>The real split is agent TYPE:<br>&bull; <b>Service Agent</b> &rarr; gets its own <b>Einstein Agent user</b>, non-login, own profile. Right for a public site where nobody is logged in.<br>&bull; <b>Employee Agent</b> (Polly) &rarr; <b>no user field exists</b>. She borrows the asker&rsquo;s.<br><br><i>&ldquo;Agentforce gives you two kinds of agent. A Service Agent gets its own Einstein Agent user &mdash; this org has eleven already &mdash; and that is right for a public site, where nobody is logged in. Polly is an Employee Agent, and that type has no user field at all. She borrows yours. That matters, because an agent with its own user queries as that user, not as the person asking, and that user is nearly always permissioned wider than they are. I did not remove a guardrail. I picked the type where the guardrail is the architecture.&rdquo;</i><br><br><b>The buddy card stays and is provable:</b> twenty environment variables, not one Salesforce-shaped. No key to leak, no user to over-permission. Salesforce ships an Agent API that would let it in; I did not use it.</td></tr>
+      <tr class="dim"><td class="s">&mdash;</td><td class="p"><s>Green is not evidence</s></td><td class="say"><b>Cut from v5.</b> The saving is already banked &mdash; do not count it again in the timing plan.</td></tr>
+      <tr><td class="s">39</td><td class="p">Take it home</td><td class="say">QR, repo, build log. "Flip the checkbox for one object and live with it for a week."</td></tr>
+      <tr><td class="s">40</td><td class="p">Closer</td><td class="say">"Two agents did the work. You close the deal."</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ─────────────────────────── TIMING + EMERGENCY ─────────────────────────── -->
+<div class="block">
+  <div class="blockhead">
+    <span class="chip" style="background:var(--warn)">Watch</span>
+    <h2>Timing and emergencies</h2>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="body">
+        <span class="lab">The budget</span>
+        <div class="pre">block 1   slides 1-7       9
+ACT 1     the record       4
+card      slide 10         .5
+block 2   slides 11-16     8
+ACT 2     the answer       5
+card      slide 19         .5
+block 3   slides 20-22     5
+ACT 3     the gate         6
+card      slide 25         .5
+block 4   slides 26-28     5
+ACT 4     the handoff      6
+card      slide 31         .5
+          slide 32         2
+ACT 5     the close        4
+card      slide 35         .5
+block 5   slides 36-41     7
+                         ----
+                          64.5 min</div>
+        <p style="margin:8px 0 0;font-size:14.5px">
+          <b>That is over a 60-minute slot.</b> The deck grew from 33 to 41 slides and the new content is the good kind, so the cut has to come from elsewhere. Marked as cut candidates in the tables above: <b>16</b> (the map, now redundant with 15), <b>28</b> (tested like code), <b>39</b> (green is not evidence). That is 5 minutes and lands you at 57.<br><br>The other 3 minutes: <b>take Q&amp;A in the channel, not the room.</b> Slide 41 already says the series ends and the channel does not. Say that out loud at 57 minutes and finish on time.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="body">
+        <span class="lab">If something dies</span>
+        <ol class="pt" style="padding-left:20px">
+          <li><b>An act fails</b> &rarr; jump to its hidden fallback slide (<b>9, 18, 24, 30, 34</b>),
+              keep talking, move on. Do not debug on stage.</li>
+          <li><b>Polly does not answer</b> &rarr; the mention was not a real pill. Retype it with
+              autocomplete.</li>
+          <li><b>The buddy does not wake</b> &rarr; check the Railway log tab. If the container is
+              restarting, that mention is gone; send it again once the log shows
+              <code>worker on shift</code>.</li>
+          <li><b>A record tab is empty</b> &rarr; click the sync icon and keep talking for 30 seconds.</li>
+          <li><b>Salesforce logged you out</b> &rarr; hidden fallback slides cover every act.
+              Do not log in on camera.</li>
+        </ol>
+        <div class="note warn" style="margin-top:14px">
+          <b>Never redeploy during the hour.</b> It is the one action that breaks the demo silently.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Rebuilt against the 41-slide deck. Verified state at build time: channel clean except the seed · List 12 rows, 12 open, 0 thread-stamped, armed ·
+  Salesforce Proposal/Price Quote · 96,000 · 2026-09-30 · prob 75 · preflight 29/29 ·
+  every typed line copied from a run that worked, not invented.
+</footer>
+
+</div>
+
+<script>
+document.querySelectorAll('.type').forEach(function(box){
+  box.addEventListener('click', function(){
+    var t = Array.from(box.childNodes)
+      .filter(function(n){ return n.nodeType === 3; })
+      .map(function(n){ return n.textContent; })
+      .join('').trim();
+    navigator.clipboard.writeText(t).then(function(){
+      var b = box.querySelector('.cp');
+      box.classList.add('done'); b.textContent = 'copied';
+      setTimeout(function(){ box.classList.remove('done'); b.textContent = 'copy'; }, 1400);
+    });
+  });
+});
+</script>
+</body>
+</html>
